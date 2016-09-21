@@ -1,24 +1,20 @@
 # Dufa
 
-**TODO: Add description**
+Library for sending push notifications with GCM and APN services.
 
-## Installation
+## Under construction...
 
-If [available in Hex](https://hex.pm/docs/publish), the package can be installed as:
+Currently GCM pushes were implemented.
 
-  1. Add `dufa` to your list of dependencies in `mix.exs`:
+```elixir
+notification = %Dufa.GCM.Notification{title: "Title", body: "This is a body"}
+push_message = %Dufa.GCM.PushMessage{
+  registration_ids: ["your_reg_id"],
+  notification: notification},
+  data: %{key: "value"}
+}
 
-    ```elixir
-    def deps do
-      [{:dufa, "~> 0.1.0"}]
-    end
-    ```
+Dufa.GCM.push(push_message)
+```
 
-  2. Ensure `dufa` is started before your application:
-
-    ```elixir
-    def application do
-      [applications: [:dufa]]
-    end
-    ```
-
+See tests and module docs, functions specs for details.
