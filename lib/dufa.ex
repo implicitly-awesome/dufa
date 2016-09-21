@@ -1,0 +1,2 @@
+defmodule Dufa do
+end
