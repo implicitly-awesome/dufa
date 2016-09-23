@@ -11,7 +11,8 @@ defmodule Dufa.Mixfile do
   end
 
   def application do
-    [applications: [:logger, :httpoison]]
+    [applications: [:logger, :httpoison],
+     mod: {Dufa, []}]
   end
 
   defp deps do
