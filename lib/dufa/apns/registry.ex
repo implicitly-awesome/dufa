@@ -27,8 +27,8 @@ defmodule Dufa.APNS.Registry do
   @doc """
   Looks up for APNS.Client's pid, stored in the `registry`, by a device's `token` and return it or create it, either.
   """
-  def create(registry, token) do
-    GenServer.call(registry, {:create, token})
+  def create(registry, token, opts \\ []) do
+    GenServer.call(registry, {:create, token, opts})
   end
 
   @doc """
@@ -36,12 +36,12 @@ defmodule Dufa.APNS.Registry do
   """
   def stop(registry), do: GenServer.stop(registry)
 
-  def handle_call({:create, token}, _from, {tokens, refs}) do
+  def handle_call({:create, token, opts}, _from, {tokens, refs}) do
     case lookup(tokens, token) do
       {:ok, pid} ->
         {:reply, pid, {tokens, refs}}
       :error ->
-        {:ok, pid} = Dufa.APNS.Supervisor.start_client
+        {:ok, pid} = Dufa.APNS.Supervisor.start_client(token, opts)
         ref = Process.monitor(pid)
         refs = Map.put(refs, ref, token)
         :ets.insert(tokens, {token, pid})

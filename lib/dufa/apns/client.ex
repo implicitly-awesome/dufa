@@ -1,17 +1,21 @@
 defmodule Dufa.APNS.Client do
   use GenServer
 
-  def start_link, do: GenServer.start_link(__MODULE__, :ok, name: __MODULE__)
+  def start_link(device_token, ssl_config) do
+    GenServer.start_link(__MODULE__, [device_token, ssl_config])
+  end
 
-  def init(:ok), do: {:ok, %{}}
+  def init(device_token, ssl_config) do
+    {:ok, %{device_token: device_token, ssl_config: ssl_config}}
+  end
 
   def stop(client), do: GenServer.stop(client)
 
-  def ping(client, payload) do
-    GenServer.call(client, {:ping, payload})
+  def ping(client) do
+    GenServer.call(client, :ping)
   end
 
-  def handle_call({:ping, payload}, _from, state) do
-    {:reply, {:pong, payload}, state}
+  def handle_call(:ping, _from, state) do
+    {:reply, {:pong, state}, state}
   end
 end

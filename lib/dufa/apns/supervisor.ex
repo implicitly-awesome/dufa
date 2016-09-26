@@ -3,25 +3,11 @@ defmodule Dufa.APNS.Supervisor do
 
   @name Dufa.APNS.Supervisor
 
+  alias Dufa.APNS.SSLConfig
+
   def name, do: @name
 
-  def start_link do
-    Supervisor.start_link(__MODULE__, :ok, name: @name)
-  end
-
-  def start_client do
-    Supervisor.start_child(@name, [])
-  end
-
-  def stop_client(client) do
-    Supervisor.terminate_child(@name, client)
-  end
-
-  def clients do
-    Supervisor.which_children(@name)
-  end
-
-  def stop, do: Supervisor.stop(@name)
+  def start_link, do: Supervisor.start_link(__MODULE__, :ok, name: @name)
 
   def init(:ok) do
     children = [
@@ -30,4 +16,14 @@ defmodule Dufa.APNS.Supervisor do
 
     supervise(children, strategy: :simple_one_for_one)
   end
+
+  def start_client(device_token, opts) do
+    Supervisor.start_child(@name, [device_token, SSLConfig.new(opts)])
+  end
+
+  def stop_client(client), do: Supervisor.terminate_child(@name, client)
+
+  def clients, do: Supervisor.which_children(@name)
+
+  def stop, do: Supervisor.stop(@name)
 end
