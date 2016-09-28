@@ -32,6 +32,10 @@ defmodule Dufa.APNS.Client do
     end
   end
 
+  def log_error({status, reason}, push_message) do
+    Logger.error("#{reason}[#{status}]\n#{inspect(push_message)}")
+  end
+
   def stop(client), do: GenServer.stop(client)
 
   def push(client, push_message = %PushMessage{}, on_response_callback \\ nil) do
@@ -62,7 +66,6 @@ defmodule Dufa.APNS.Client do
 
   def handle_info({:END_STREAM, stream},
                   %{apns_socket: socket,
-                    push_message: push_message,
                     on_response_callback: on_response_callback} = state) do
     {:ok, {headers, body}} = HTTP2Client.get_response(socket, stream)
 
@@ -70,11 +73,10 @@ defmodule Dufa.APNS.Client do
   end
 
   defp fetch_status([]), do: nil
-  defp fetch_status([{":status", status} | tail]), do: status
+  defp fetch_status([{":status", status} | _tail]), do: status
   defp fetch_status([_head | tail]), do: fetch_status(tail)
   defp fetch_status(_), do: nil
 
-  defp handle_response(response, state, on_response_callback \\ nil)
   defp handle_response({headers, body}, state, on_response_callback)
          when (is_function(on_response_callback) or is_nil(on_response_callback)) do
     case fetch_status(headers) do
@@ -95,9 +97,5 @@ defmodule Dufa.APNS.Client do
   defp fetch_reason(body) do
     {:ok, body} = Poison.decode(body)
     Macro.underscore(body["reason"])
-  end
-
-  defp log_error({status, reason}, push_message) do
-    Logger.error("#{reason}[#{status}]\n#{inspect(push_message)}")
   end
 end

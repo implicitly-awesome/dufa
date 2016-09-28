@@ -6,8 +6,8 @@ defmodule Dufa.HTTP2Client do
   def uri(:apns, :prod), do: to_char_list(@apns_production_api_uri)
 
   def open_socket(_, _, 3), do: {:error, :open_cosket, :timeout}
-  def open_socket(provider, %{cert: nil}, _tries), do: {:error, :ssl_config, "Need to provide a certificate"}
-  def open_socket(provider, %{key: nil}, _tries), do: {:error, :ssl_config, "Need to provide RSA key"}
+  def open_socket(_provider, %{cert: nil}, _tries), do: {:error, :ssl_config, "Need to provide a certificate"}
+  def open_socket(_provider, %{key: nil}, _tries), do: {:error, :ssl_config, "Need to provide RSA key"}
   def open_socket(provider, %{mode: mode, cert: cert, key: key} = ssl_config, tries) do
     case :h2_client.start_link(:https, uri(provider, mode), socket_config({:cert, cert}, {:key, key})) do
       {:ok, socket} -> {:ok, socket}

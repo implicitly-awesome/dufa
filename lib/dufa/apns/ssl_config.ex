@@ -48,11 +48,11 @@ defmodule Dufa.APNS.SSLConfig do
 
   defp fetch_cert([]), do: nil
   defp fetch_cert([{:Certificate, cert, _} | _tail]), do: cert
-  defp fetch_cert([head | tail]), do: fetch_cert(tail)
+  defp fetch_cert([_head | tail]), do: fetch_cert(tail)
   defp fetch_cert(_), do: nil
 
   defp fetch_key([]), do: nil
   defp fetch_key([{:RSAPrivateKey, key, _} | _tail]), do: {:RSAPrivateKey, key}
-  defp fetch_key([head | tail]), do: fetch_key(tail)
+  defp fetch_key([_head | tail]), do: fetch_key(tail)
   defp fetch_key(_), do: nil
 end
