@@ -57,14 +57,14 @@ defmodule Dufa.APNS.Client do
       {":path", "/3/device/#{device_token}"},
       {"content-length", "#{byte_size(json)}"}
     ]
-    :h2_client.send_request(socket, headers, json)
+    HTTP2Client.send_request(socket, headers, json)
   end
 
   def handle_info({:END_STREAM, stream},
                   %{apns_socket: socket,
                     push_message: push_message,
                     on_response_callback: on_response_callback} = state) do
-    {:ok, {headers, body}} = :h2_client.get_response(socket, stream)
+    {:ok, {headers, body}} = HTTP2Client.get_response(socket, stream)
 
     handle_response({headers, body}, state, on_response_callback)
   end

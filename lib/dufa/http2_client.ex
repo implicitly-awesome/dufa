@@ -27,4 +27,12 @@ defmodule Dufa.HTTP2Client do
       :binary
     ]
   end
+
+  def send_request(socket, headers, payload) do
+    :h2_client.send_request(socket, headers, payload)
+  end
+
+  def get_response(socket, stream) do
+    :h2_client.get_response(socket, stream)
+  end
 end
