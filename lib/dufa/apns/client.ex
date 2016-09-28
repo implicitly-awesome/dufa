@@ -100,43 +100,41 @@ defmodule Dufa.APNS.Client do
   def handle_info({:END_STREAM, stream},
                   %{apns_socket: socket,
                     push_message: push_message,
-                    on_response_callback: nil} = state) do
+                    on_response_callback: on_response_callback} = state) do
     {:ok, {headers, body}} = :h2_client.get_response(socket, stream)
 
-    status = fetch_status(headers)
-
-    case status do
-      "200" ->
-        {:noreply, state}
-      nil ->
-        {:noreply, state}
-      _ ->
-        {:noreply, state}
-    end
-  end
-
-  def handle_info({:END_STREAM, stream},
-                  %{apns_socket: socket,
-                    push_message: push_message,
-                    on_response_callback: on_response_callback} = state) when not is_nil(on_response_callback) do
-    {:ok, {headers, body}} = :h2_client.get_response(socket, stream)
-
-    status = fetch_status(headers)
-
-    case status do
-      "200" ->
-        on_response_callback.(push_message, body)
-        {:noreply, Map.delete(state, :on_response_callback)}
-      nil ->
-        {:noreply, state}
-      error ->
-        on_response_callback.(push_message, {:error, error})
-        {:noreply, Map.delete(state, :on_response_callback)}
-    end
+    handle_response({headers, body}, state, on_response_callback)
   end
 
   defp fetch_status([]), do: nil
   defp fetch_status([{":status", status} | tail]), do: status
   defp fetch_status([_head | tail]), do: fetch_status(tail)
   defp fetch_status(_), do: nil
+
+  defp handle_response(response, state, on_response_callback \\ nil)
+  defp handle_response({headers, body}, state, on_response_callback)
+         when (is_function(on_response_callback) or is_nil(on_response_callback)) do
+    case fetch_status(headers) do
+      "200" ->
+        if on_response_callback, do: on_response_callback.(state.push_message, body)
+        {:noreply, state}
+      nil ->
+        {:noreply, state}
+      error_status ->
+        error_reason = body |> fetch_reason
+        {error_status, error_reason} |> log_error(state.push_message)
+        if on_response_callback, do: on_response_callback.(state.push_message, {:error, {error_status, error_reason}})
+        {:noreply, state}
+    end
+  end
+  defp handle_response(_response, state, _on_response_callback), do: {:noreply, state}
+
+  defp fetch_reason(body) do
+    {:ok, body} = Poison.decode(body)
+    Macro.underscore(body["reason"])
+  end
+
+  defp log_error({status, reason}, push_message) do
+    Logger.error("#{reason}[#{status}]\n#{inspect(push_message)}")
+  end
 end
