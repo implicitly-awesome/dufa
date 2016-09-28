@@ -4,15 +4,19 @@ defmodule Dufa.APNS.SSLConfig do
   @type t :: __MODULE__
 
   defp config_mode, do: Application.get_env(:dufa, :apns_mode)
-  defp config_cert, do: Application.get_env(:dufa, :apns_cert)
-  defp config_key,  do: Application.get_env(:dufa, :apns_key)
+  defp config_cert_file, do: Application.get_env(:dufa, :apns_cert_file)
+  defp config_key_file,  do: Application.get_env(:dufa, :apns_key_file)
 
   def new(args) do
-    %__MODULE__{
-      mode: (Keyword.get(args, :mode) || config_mode),
-      cert: (Keyword.get(args, :cert) || cert(config_cert)),
-      key:  (Keyword.get(args, :key)  || key(config_key))
+    conf = %__MODULE__{
+      mode: (Keyword.get(args, :mode)           || config_mode),
+      cert: (Keyword.get(args, :cert)           || cert(config_cert_file)),
+      cert_file: (Keyword.get(args, :cert_file) || config_cert_file),
+      key:  (Keyword.get(args, :key)            || key(config_key_file)),
+      key_file:  (Keyword.get(args, :key_file)  || config_key_file)
     }
+
+    conf
   end
 
   def cert(file) when is_binary(file) do
@@ -37,21 +41,19 @@ defmodule Dufa.APNS.SSLConfig do
 
   def decode_file(file, type) when is_binary(file) and is_atom(type) do
     case type do
-      :cert ->
-        # IO.inspect :public_key.pem_decode(file)
-        case :public_key.pem_decode(file) do
-          [{:Certificate, cert, _}] -> cert
-          [{:Certificate, cert, _}, {:RSAPrivateKey, _, _}] -> cert
-          _ -> nil
-        end
-      :key ->
-        case :public_key.pem_decode(file) do
-         [{:RSAPrivateKey, key, _}] -> key
-         [{:Certificate, _, _}, {:RSAPrivateKey, key, _}] -> key
-         _ -> nil
-        end
-      _ ->
-        nil
+      :cert -> fetch_cert(:public_key.pem_decode(file))
+      :key -> fetch_key(:public_key.pem_decode(file))
+      _ -> nil
     end
   end
+
+  defp fetch_cert([]), do: nil
+  defp fetch_cert([{:Certificate, cert, _} | _tail]), do: cert
+  defp fetch_cert([head | tail]), do: fetch_cert(tail)
+  defp fetch_cert(_), do: nil
+
+  defp fetch_key([]), do: nil
+  defp fetch_key([{:RSAPrivateKey, key, _} | _tail]), do: {:RSAPrivateKey, key}
+  defp fetch_key([head | tail]), do: fetch_key(tail)
+  defp fetch_key(_), do: nil
 end

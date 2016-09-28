@@ -20,6 +20,7 @@ defmodule Dufa.Mixfile do
       {:poison, "~> 2.0"},
       {:httpoison, "~> 0.9.0"},
       {:mock, "~> 0.1.1", only: :test},
+      {:chatterbox, github: "joedevivo/chatterbox"}
     ]
   end
 end

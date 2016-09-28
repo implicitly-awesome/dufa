@@ -7,7 +7,7 @@ defmodule Dufa.Supervisor do
 
   def init(:ok) do
     children = [
-      worker(Dufa.APNS.Registry, [Dufa.APNS.Registry]),
+      worker(Dufa.APNS.Registry, [:apns_registry], id: :apns_registry),
       supervisor(Dufa.APNS.Supervisor, [])
     ]
 
