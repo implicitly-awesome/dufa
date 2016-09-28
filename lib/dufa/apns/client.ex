@@ -3,16 +3,14 @@ defmodule Dufa.APNS.Client do
   require Logger
 
   alias Dufa.APNS.PushMessage
-
-  @apns_production_api_uri "api.push.apple.com"
-  @apns_development_api_uri "api.development.push.apple.com"
+  alias Dufa.HTTP2Client
 
   def start_link(device_token, ssl_config) do
     GenServer.start_link(__MODULE__, {:ok, device_token, ssl_config})
   end
 
   def init({:ok, device_token, ssl_config}) do
-    case open_socket(ssl_config, 0) do
+    case HTTP2Client.open_socket(:apns, ssl_config, 0) do
       {:ok, socket} ->
         {:ok, %{
           apns_socket: socket,
@@ -36,41 +34,6 @@ defmodule Dufa.APNS.Client do
 
   def stop(client), do: GenServer.stop(client)
 
-  def ping(client) do
-    GenServer.call(client, :ping)
-  end
-
-  def handle_call(:ping, _from, state) do
-    {:reply, {:pong, state}, state}
-  end
-
-  def uri(:dev), do: to_char_list(@apns_development_api_uri)
-  def uri(:prod), do: to_char_list(@apns_production_api_uri)
-
-  def open_socket(_, 3), do: {:error, :open_cosket, :timeout}
-  def open_socket(%{cert: nil}, _tries), do: {:error, :ssl_config, "Need to provide a certificate"}
-  def open_socket(%{key: nil}, _tries), do: {:error, :ssl_config, "Need to provide RSA key"}
-  def open_socket(%{mode: mode, cert: cert, key: key} = ssl_config, tries) do
-    case :h2_client.start_link(:https, uri(mode), socket_config({:cert, cert}, {:key, key})) do
-      {:ok, socket} -> {:ok, socket}
-      _ -> open_socket(ssl_config, tries + 1)
-    end
-  end
-  def open_socket(_, _), do: {:error, :ssl_config, "Invalid SSL config"}
-
-  defp socket_config(cert, key) do
-    [
-      cert,
-      key,
-      {:password, ''},
-      {:packet, 0},
-      {:reuseaddr, true},
-      {:active, true},
-      :binary
-    ]
-  end
-
-
   def push(client, push_message = %PushMessage{}, on_response_callback \\ nil) do
     GenServer.cast(client, {:push, push_message, on_response_callback})
   end
@@ -86,7 +49,7 @@ defmodule Dufa.APNS.Client do
     {:noreply, state}
   end
 
-  def do_push(push_message, %{apns_socket: socket, device_token: device_token}) do
+  defp do_push(push_message, %{apns_socket: socket, device_token: device_token}) do
     {:ok, json} = Poison.encode(push_message)
 
     headers = [

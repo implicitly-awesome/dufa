@@ -1,33 +1,36 @@
 defmodule APNS.ClientTest do
   use ExUnit.Case, async: true
 
+  import Mock
+
   @apns_production_api_uri "api.push.apple.com"
   @apns_development_api_uri "api.development.push.apple.com"
 
   alias Dufa.APNS.Client
   alias Dufa.APNS.SSLConfig
+  alias Dufa.HTTP2Client
 
   setup do
-    {:ok, client} = Client.start_link("device_token", %SSLConfig{})
-    {:ok, client: client}
+    ssl_config = SSLConfig.new
+    {:ok, ssl_config: ssl_config}
   end
 
-  test "stop/1: stops a client", %{client: client} do
+  test_with_mock "stop/1: stops a client",
+                 %{ssl_config: ssl_config},
+                 HTTP2Client,
+                 [],
+                 [open_socket: fn (_, _, _) -> {:ok, nil} end] do
+    {:ok, client} = Client.start_link("device_token", ssl_config)
     Client.stop(client)
     refute Process.alive?(client)
   end
 
-  test "it pongs", %{client: client} do
-    assert Client.ping(client) == {:pong, ["device_token", %SSLConfig{}]}
-  end
-
-  test "it pongs 2" do
-    {:ok, client} = Client.start_link("device_token", %SSLConfig{})
-    assert Client.ping(client) == {:pong, ["device_token", %SSLConfig{}]}
-  end
-
-  test "uri/1: returns APNS uri depend on ssl_config[:mode] option" do
-    assert Client.uri(:dev) == @apns_development_api_uri
-    assert Client.uri(:prod) == @apns_production_api_uri
-  end
+  # test_with_mock "push/3: ",
+  #                %{ssl_config: ssl_config},
+  #                HTTP2Client,
+  #                [],
+  #                [open_socket: fn (_, _, _) -> {:ok, nil} end] do
+  #   {:ok, client} = Client.start_link("device_token", ssl_config)
+  #
+  # end
 end

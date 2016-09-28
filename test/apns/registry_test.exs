@@ -1,23 +1,31 @@
 defmodule APNS.RegistryTest do
   use ExUnit.Case, async: false
 
-  alias Dufa.APNS.SSLConfig
+  import Mock
+
+  alias Dufa.HTTP2Client
 
   setup context do
     {:ok, _} = Dufa.APNS.Registry.start_link(context.test)
     {:ok, registry: context.test, device_token: "device_token"}
   end
 
-  test "creates client", %{registry: registry, device_token: token} do
+  test_with_mock "creates client",
+                 %{registry: registry, device_token: token},
+                 HTTP2Client,
+                 [],
+                 [open_socket: fn (_, _, _) -> {:ok, nil} end] do
     assert Dufa.APNS.Registry.lookup(registry, token) == :error
 
     Dufa.APNS.Registry.create(registry, token)
-    assert {:ok, client} = Dufa.APNS.Registry.lookup(registry, token)
-
-    assert Dufa.APNS.Client.ping(client) == {:pong, ["device_token", %SSLConfig{}]}
+    assert {:ok, _client} = Dufa.APNS.Registry.lookup(registry, token)
   end
 
-  test "removes clients on exit", %{registry: registry, device_token: token} do
+  test_with_mock "removes clients on exit",
+                 %{registry: registry, device_token: token},
+                 HTTP2Client,
+                 [],
+                 [open_socket: fn (_, _, _) -> {:ok, nil} end] do
     assert Dufa.APNS.Registry.lookup(registry, token) == :error
     client = Dufa.APNS.Registry.create(registry, token)
 
@@ -28,7 +36,11 @@ defmodule APNS.RegistryTest do
     assert Dufa.APNS.Registry.lookup(registry, token) == :error
   end
 
-  test "removes clients on crash", %{registry: registry, device_token: token} do
+  test_with_mock "removes clients on crash",
+                 %{registry: registry, device_token: token},
+                 HTTP2Client,
+                 [],
+                 [open_socket: fn (_, _, _) -> {:ok, nil} end] do
     client = Dufa.APNS.Registry.create(registry, token)
 
     ref = Process.monitor(client)
