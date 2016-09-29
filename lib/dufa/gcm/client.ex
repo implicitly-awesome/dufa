@@ -1,5 +1,4 @@
 defmodule Dufa.GCM.Client do
-  # TODO: Client behaviour
   use GenServer
   require Logger
 
