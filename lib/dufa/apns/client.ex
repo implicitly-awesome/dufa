@@ -32,7 +32,7 @@ defmodule Dufa.APNS.Client do
     end
   end
 
-  def log_error({status, reason}, push_message) do
+  defp log_error({status, reason}, push_message) do
     Logger.error("#{reason}[#{status}]\n#{inspect(push_message)}")
   end
 
@@ -41,8 +41,6 @@ defmodule Dufa.APNS.Client do
   def push(client, push_message = %PushMessage{}, on_response_callback \\ nil) do
     GenServer.cast(client, {:push, push_message, on_response_callback})
   end
-
-  def handle_cast(:stop, state), do: {:noreply, state}
 
   def handle_cast({:push, push_message, on_response_callback}, state) do
     do_push(push_message, state)

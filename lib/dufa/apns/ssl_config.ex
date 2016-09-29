@@ -6,13 +6,13 @@ defmodule Dufa.APNS.SSLConfig do
   defp config_cert_file, do: Application.get_env(:dufa, :apns_cert_file)
   defp config_key_file,  do: Application.get_env(:dufa, :apns_key_file)
 
-  def new(args \\ []) do
+  def new(args \\ %{}) do
     conf = %__MODULE__{
-      mode:      (Keyword.get(args, :mode)      || config_mode),
-      cert:      (Keyword.get(args, :cert)      || cert(config_cert_file)),
-      cert_file: (Keyword.get(args, :cert_file) || config_cert_file),
-      key:       (Keyword.get(args, :key)       || key(config_key_file)),
-      key_file:  (Keyword.get(args, :key_file)  || config_key_file)
+      mode:      (Map.get(args, :mode)      || config_mode),
+      cert:      (Map.get(args, :cert)      || cert(config_cert_file)),
+      cert_file: (Map.get(args, :cert_file) || config_cert_file),
+      key:       (Map.get(args, :key)       || key(config_key_file)),
+      key_file:  (Map.get(args, :key_file)  || config_key_file)
     }
 
     conf

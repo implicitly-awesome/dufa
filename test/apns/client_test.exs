@@ -43,17 +43,6 @@ defmodule APNS.ClientTest do
     refute Process.alive?(client)
   end
 
-  test_with_mock "push/3: sends push notification",
-                 %{ssl_config: ssl_config, ok_response: ok_response, push_message: push_message},
-                 HTTP2Client,
-                 [],
-                 [open_socket: fn (_, _, _) -> {:ok, nil} end,
-                  send_request: fn (_, _, _) -> {:ok, nil} end,
-                  get_response: fn (_, _) -> {:ok, ok_response} end] do
-    {:ok, client} = Client.start_link("device_token", ssl_config)
-    assert Client.push(client, push_message) == :ok
-  end
-
   test_with_mock "push/3: sends push notification and invoke a callback",
                  %{ssl_config: ssl_config, ok_response: {_, ok_body} = ok_response, push_message: push_message},
                  HTTP2Client,
