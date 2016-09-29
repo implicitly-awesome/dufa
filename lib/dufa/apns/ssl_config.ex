@@ -1,22 +1,28 @@
 defmodule Dufa.APNS.SSLConfig do
-  defstruct ~w(mode cert key)a
+  defstruct ~w(mode cert cert_file key key_file)a
 
-  @enforce_keys [:mode, :cert, :key]
+  @enforce_keys [:mode]
 
-  @type t :: %__MODULE__{mode: atom(), cert: binary(), key: binary()}
+  @type t :: %__MODULE__{mode: atom(),
+                         cert: binary(),
+                         cert_file: String.t,
+                         key: binary(),
+                         key_file: String.t}
 
   defp config_mode,      do: Application.get_env(:dufa, :apns_mode)
   defp config_cert_file, do: Application.get_env(:dufa, :apns_cert_file)
   defp config_key_file,  do: Application.get_env(:dufa, :apns_key_file)
 
   def new(args \\ %{}) do
-    conf = %__MODULE__{
-      mode: (Map.get(args, :mode) || config_mode),
-      cert: (Map.get(args, :cert) || cert(config_cert_file)),
-      key:  (Map.get(args, :key)  || key(config_key_file)),
-    }
+    mode = Map.get(args, :mode) || config_mode
+    cert = Map.get(args, :cert) || cert(Map.get(args, :cert_file)) || cert(config_cert_file)
+    key =  Map.get(args, :key)  || key(Map.get(args, :key_file))   || key(config_key_file)
 
-    conf
+    conf = %__MODULE__{
+      mode: mode,
+      cert: cert,
+      key:  key
+    }
   end
 
   def cert(file) when is_binary(file) do
@@ -40,9 +46,13 @@ defmodule Dufa.APNS.SSLConfig do
   end
 
   def decode_file(file, type) when is_binary(file) and is_atom(type) do
-    case type do
-      :cert -> fetch_cert(:public_key.pem_decode(file))
-      :key -> fetch_key(:public_key.pem_decode(file))
+    try do
+      case type do
+        :cert -> fetch_cert(:public_key.pem_decode(file))
+        :key -> fetch_key(:public_key.pem_decode(file))
+        _ -> nil
+      end
+    rescue
       _ -> nil
     end
   end
