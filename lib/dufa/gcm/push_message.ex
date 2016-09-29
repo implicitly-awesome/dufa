@@ -1,7 +1,13 @@
 defmodule Dufa.GCM.PushMessage do
   @derive [Poison.Encoder]
 
-  @type t :: %__MODULE__{}
+  @type t :: %__MODULE__{to: String.t,
+                         registration_ids: nonempty_list(),
+                         priority: String.t,
+                         content_available: boolean(),
+                         collapse_key: any(),
+                         data: Map.t,
+                         notification: Dufa.GCM.Notification.t}
 
   defstruct to: nil,
             registration_ids: [],
