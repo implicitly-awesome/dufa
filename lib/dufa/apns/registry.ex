@@ -8,6 +8,7 @@ defmodule Dufa.APNS.Registry do
     GenServer.start_link(__MODULE__, name, name: name)
   end
 
+  @spec init(String.t | atom()) :: {:ok, {atom() | pos_integer(), Map.t}}
   def init(table) do
     tokens = :ets.new(table, [:named_table, :set, read_concurrency: true])
     refs = %{}
@@ -17,6 +18,7 @@ defmodule Dufa.APNS.Registry do
   @doc """
   Looks up for APNS.Client's pid, stored in the `registry`, by a device's `token`.
   """
+  @spec lookup(atom() | pos_integer(), String.t) :: {:ok, pid()} | :error
   def lookup(registry, token) do
     case :ets.lookup(registry, token) do
       [{^token, pid}] -> {:ok, pid}
@@ -27,6 +29,7 @@ defmodule Dufa.APNS.Registry do
   @doc """
   Looks up for APNS.Client's pid, stored in the `registry`, by a device's `token` and return it or create it, either.
   """
+  @spec create(pid(), String.t, Map.t) :: {:reply, pid(), tuple()}
   def create(registry, token, opts \\ %{}) do
     GenServer.call(registry, {:create, token, opts})
   end
@@ -34,6 +37,7 @@ defmodule Dufa.APNS.Registry do
   @doc """
   Stops the `registry`.
   """
+  @spec stop(pid) :: :ok
   def stop(registry), do: GenServer.stop(registry)
 
   def handle_call({:create, token, opts}, _from, {tokens, refs}) do

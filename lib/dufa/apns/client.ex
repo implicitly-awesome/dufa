@@ -5,10 +5,16 @@ defmodule Dufa.APNS.Client do
   alias Dufa.APNS.PushMessage
   alias Dufa.HTTP2Client
 
+  @type open_socket_result :: {:ok, Map.t} |
+                              {:stop, {:error, :timeout}} |
+                              {:stop, {:error, :invalid_config}} |
+                              {:stop, {:error, :unhandled}}
+
   def start_link(device_token, ssl_config) do
     GenServer.start_link(__MODULE__, {:ok, device_token, ssl_config})
   end
 
+  @spec init({:ok, String.t, Dufa.APNS.SSLConfig.t}) :: open_socket_result
   def init({:ok, device_token, ssl_config}) do
     case HTTP2Client.open_socket(:apns, ssl_config, 0) do
       {:ok, socket} ->
@@ -32,12 +38,14 @@ defmodule Dufa.APNS.Client do
     end
   end
 
+  @spec log_error({String.t, String.t}, Dufa.APNS.PushMessage) :: :ok | {:error, any()}
   defp log_error({status, reason}, push_message) do
     Logger.error("#{reason}[#{status}]\n#{inspect(push_message)}")
   end
 
   def stop(client), do: GenServer.stop(client)
 
+  @spec push(pid(), Dufa.APNS.PushMessage.t, fun()) :: {:noreply, Map.t}
   def push(client, push_message = %PushMessage{}, on_response_callback \\ nil) do
     GenServer.cast(client, {:push, push_message, on_response_callback})
   end
@@ -51,6 +59,7 @@ defmodule Dufa.APNS.Client do
     {:noreply, state}
   end
 
+  @spec do_push(Dufa.APNS.PushMessage.t, %{apns_socket: pid(), device_token: String.t}) :: {:noreply, Map.t}
   defp do_push(push_message, %{apns_socket: socket, device_token: device_token}) do
     {:ok, json} = Poison.encode(push_message)
 
@@ -70,11 +79,13 @@ defmodule Dufa.APNS.Client do
     handle_response({headers, body}, state, on_response_callback)
   end
 
+  @spec fetch_status(List.t) :: String.t | nil
   defp fetch_status([]), do: nil
   defp fetch_status([{":status", status} | _tail]), do: status
   defp fetch_status([_head | tail]), do: fetch_status(tail)
   defp fetch_status(_), do: nil
 
+  @spec handle_response({List.t, String.t}, Map.t, fun()) :: {:noreply, Map.t}
   defp handle_response({headers, body}, state, on_response_callback)
          when (is_function(on_response_callback) or is_nil(on_response_callback)) do
     case fetch_status(headers) do
@@ -92,6 +103,7 @@ defmodule Dufa.APNS.Client do
   end
   defp handle_response(_response, state, _on_response_callback), do: {:noreply, state}
 
+  @spec fetch_reason(String.t) :: String.t
   defp fetch_reason(body) do
     {:ok, body} = Poison.decode(body)
     Macro.underscore(body["reason"])

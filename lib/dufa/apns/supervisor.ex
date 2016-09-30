@@ -17,13 +17,17 @@ defmodule Dufa.APNS.Supervisor do
     supervise(children, strategy: :simple_one_for_one)
   end
 
+  @spec start_client(String.t, Map.t) :: Supervisor.on_start_child
   def start_client(device_token, opts) do
     Supervisor.start_child(@name, [device_token, SSLConfig.new(opts)])
   end
 
+  @spec stop_client(pid()) :: :ok | {:error, error} when error: :not_found | :simple_one_for_one
   def stop_client(client), do: Supervisor.terminate_child(@name, client)
 
+  @spec clients() :: List.t
   def clients, do: Supervisor.which_children(@name)
 
+  @spec stop() :: :ok
   def stop, do: Supervisor.stop(@name)
 end

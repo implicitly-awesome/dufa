@@ -4,6 +4,11 @@ defmodule Dufa.GCM.Client do
 
   alias Dufa.GCM.PushMessage
 
+  @type push_result :: {:error, :unauthorized} |
+                       {:error, :unhandled_error} |
+                       {:error, {String.t, List.t}} |
+                       :ok
+
   @uri "https://gcm-http.googleapis.com"
   @path "/gcm/send"
   @name :gcm_client
@@ -14,12 +19,15 @@ defmodule Dufa.GCM.Client do
 
   def init({:ok, api_key}), do: {:ok, %{api_key: api_key}}
 
+  @spec stop() :: :ok
   def stop, do: GenServer.stop(@name)
 
+  @spec push(Dufa.GCM.PushMessage.t, Map.t, fun()) :: {:reply, push_result, Map.t}
   def push(push_message = %PushMessage{}, opts \\ %{}, on_response_callback \\ nil) do
     GenServer.call(@name, {:push, push_message, opts, on_response_callback})
   end
 
+  @spec log_error({String.t, String.t}, Dufa.GCM.PushMessage) :: :ok | {:error, any()}
   defp log_error({status, reason}, push_message) do
     Logger.error("#{reason}[#{status}]\n#{inspect(push_message)}")
   end
@@ -36,6 +44,7 @@ defmodule Dufa.GCM.Client do
     {:reply, {:error, :api_key_not_found}, state}
   end
 
+  @spec do_push(Dufa.GCM.PushMessage.t, String.t, fun()) :: push_result
   defp do_push(push_message, api_key, on_response_callback) do
     headers = [
       {"Content-Type", "application/json"},
@@ -58,6 +67,7 @@ defmodule Dufa.GCM.Client do
     end
   end
 
+  @spec handle_response(Dufa.GCM.PushMessage.t, {String.t, String.t}, fun()) :: :ok | {:error, {String.t, List.t}}
   defp handle_response(push_message, {status, body}, on_response_callback) do
     errors =
       body
@@ -76,6 +86,7 @@ defmodule Dufa.GCM.Client do
     end
   end
 
+  @spec handle_result(Map.t) :: :ok | {:error, String.t}
   defp handle_result(%{"error" => message}), do: {:error, message}
   defp handle_result(_), do: :ok
 end

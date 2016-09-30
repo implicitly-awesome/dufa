@@ -1,13 +1,19 @@
 defmodule Dufa.HTTP2Client do
-  @apns_production_api_uri "api.push.apple.com"
-  @apns_development_api_uri "api.development.push.apple.com"
+  @moduledoc """
+  Wrapper over :h2_client (chatterbox).
+  """
 
-  def uri(:apns, :dev), do: to_char_list(@apns_development_api_uri)
-  def uri(:apns, :prod), do: to_char_list(@apns_production_api_uri)
+  @spec uri(atom(), atom()) :: List.t
+  def uri(:apns, :dev), do: to_char_list("api.push.apple.com")
+  def uri(:apns, :prod), do: to_char_list("api.development.push.apple.com")
 
+  @spec open_socket(atom(), Dufa.APNS.SSLConfig.t, pos_integer()) :: {:ok, pid()} |
+                                                                     {:error, :open_socket, :timeout} |
+                                                                     {:error, :ssl_config, :certificate_missed} |
+                                                                     {:error, :ssl_config, :rsa_key_missed}
   def open_socket(_, _, 3), do: {:error, :open_cosket, :timeout}
-  def open_socket(_provider, %{cert: nil}, _tries), do: {:error, :ssl_config, "Need to provide a certificate"}
-  def open_socket(_provider, %{key: nil}, _tries), do: {:error, :ssl_config, "Need to provide RSA key"}
+  def open_socket(_provider, %{cert: nil}, _tries), do: {:error, :ssl_config, :certificate_missed}
+  def open_socket(_provider, %{key: nil}, _tries), do: {:error, :ssl_config, :rsa_key_missed}
   def open_socket(provider, %{mode: mode, cert: cert, key: key} = ssl_config, tries) do
     case :h2_client.start_link(:https, uri(provider, mode), socket_config({:cert, cert}, {:key, key})) do
       {:ok, socket} -> {:ok, socket}
@@ -16,6 +22,17 @@ defmodule Dufa.HTTP2Client do
   end
   def open_socket(_, _, _), do: {:error, :ssl_config, "Invalid SSL config"}
 
+  @spec send_request(pid(), List.t, String.t) :: {:ok, pid()} | any()
+  def send_request(socket, headers, payload) do
+    :h2_client.send_request(socket, headers, payload)
+  end
+
+  @spec get_response(pid(), pid()) :: {:ok, {String.t, String.t}} | any()
+  def get_response(socket, stream) do
+    :h2_client.get_response(socket, stream)
+  end
+
+  @spec socket_config(binary(), binary()) :: List.t
   defp socket_config(cert, key) do
     [
       cert,
@@ -26,13 +43,5 @@ defmodule Dufa.HTTP2Client do
       {:active, true},
       :binary
     ]
-  end
-
-  def send_request(socket, headers, payload) do
-    :h2_client.send_request(socket, headers, payload)
-  end
-
-  def get_response(socket, stream) do
-    :h2_client.get_response(socket, stream)
   end
 end

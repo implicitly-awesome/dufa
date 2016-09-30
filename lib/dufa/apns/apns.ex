@@ -1,9 +1,7 @@
 defmodule Dufa.APNS do
   @behaviour Dufa.Pusher
 
-  alias Dufa.APNS.Registry
-  alias Dufa.APNS.Client
-
+  @spec push(Dufa.APNS.PushMessage.t, Map.t, fun()) :: {:noreply, Map.t}
   def push(push_message, opts \\ %{}, on_response_callback \\ nil)
 
   def push(push_message, %{mode: _mode} = opts, on_response_callback) do
@@ -26,16 +24,18 @@ defmodule Dufa.APNS do
     stop_and_push(push_message, opts, on_response_callback)
   end
 
+  @spec push(Dufa.APNS.PushMessage.t, Map.t, fun()) :: {:noreply, Map.t}
   defp stop_and_push(push_message, opts, on_response_callback) do
-    with {:ok, client} <- Registry.lookup(:apns_registry, push_message.token) do
-      Client.stop(client)
+    with {:ok, client} <- Dufa.APNS.Registry.lookup(:apns_registry, push_message.token) do
+      Dufa.APNS.Client.stop(client)
     end
     do_push(push_message, opts, on_response_callback)
   end
 
+  @spec push(Dufa.APNS.PushMessage.t, Map.t, fun()) :: {:noreply, Map.t}
   defp do_push(push_message, opts, on_response_callback) do
     :apns_registry
-    |> Registry.create(push_message.token, opts)
-    |> Client.push(push_message, on_response_callback)
+    |> Dufa.APNS.Registry.create(push_message.token, opts)
+    |> Dufa.APNS.Client.push(push_message, on_response_callback)
   end
 end
