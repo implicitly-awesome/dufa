@@ -1,4 +1,8 @@
 defmodule Dufa.APNS.SSLConfig do
+  @moduledoc """
+  Defines APNS SSL configuration structure and provides a configuration's constructor.
+  """
+
   defstruct ~w(mode cert cert_file key key_file)a
 
   @enforce_keys [:mode]
@@ -16,6 +20,9 @@ defmodule Dufa.APNS.SSLConfig do
   @spec config_key_file() :: atom() | String.t | nil
   defp config_key_file,  do: Application.get_env(:dufa, :apns_key_file)
 
+  @doc """
+  Creates SSL configuration with given `args` arguments.
+  """
   @spec new(Map.t) :: __MODULE__.t
   def new(args \\ %{}) do
     mode = Map.get(args, :mode) || config_mode
@@ -29,18 +36,27 @@ defmodule Dufa.APNS.SSLConfig do
     }
   end
 
+  @doc """
+  Extracts a certificate from the file by given `file_path`.
+  """
   @spec cert(String.t) :: binary()
   def cert(file_path) when is_binary(file_path) do
     file_path |> read_file |> decode_file(:cert)
   end
   def cert(_), do: nil
 
+  @doc """
+  Extracts a RSA key from the file by given `file_path`.
+  """
   @spec key(String.t) :: binary()
   def key(file_path) when is_binary(file_path) do
     file_path |> read_file |> decode_file(:key)
   end
   def key(_), do: nil
 
+  @doc """
+  Reads a content of the file by given `file_path`.
+  """
   @spec read_file(String.t) :: String.t | nil
   def read_file(file_path) when is_binary(file_path) do
     with true <- :filelib.is_file(file_path),
@@ -52,6 +68,9 @@ defmodule Dufa.APNS.SSLConfig do
          end
   end
 
+  @doc """
+  Decodes a `file_content` depending on given content's `type`.
+  """
   @spec decode_file(String.t, :cert | :key) :: binary() | nil
   def decode_file(file_content, type) when is_binary(file_content) and is_atom(type) do
     try do

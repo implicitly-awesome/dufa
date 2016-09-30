@@ -1,9 +1,11 @@
 defmodule Dufa.APNS.Registry do
+  @moduledoc """
+  APNS clients registry. Stores connections (per device token) opened by
+  correspond clients (pids).
+  """
+
   use GenServer
 
-  @doc """
-  Starts the registry with the given `name`.
-  """
   def start_link(name) do
     GenServer.start_link(__MODULE__, name, name: name)
   end

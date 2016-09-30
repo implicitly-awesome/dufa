@@ -1,4 +1,8 @@
 defmodule Dufa.GCM.Client do
+  @moduledoc """
+  The client that incapsulates interaction logic with GCM.
+  """
+
   use GenServer
   require Logger
 
@@ -19,9 +23,16 @@ defmodule Dufa.GCM.Client do
 
   def init({:ok, api_key}), do: {:ok, %{api_key: api_key}}
 
+  @doc """
+  Stops the client process.
+  """
   @spec stop() :: :ok
   def stop, do: GenServer.stop(@name)
 
+  @doc """
+  Pushes a `push_message` with `opts` options.
+  Invokes `on_response_callback` on a response.
+  """
   @spec push(Dufa.GCM.PushMessage.t, Map.t, fun()) :: {:reply, push_result, Map.t}
   def push(push_message = %PushMessage{}, opts \\ %{}, on_response_callback \\ nil) do
     GenServer.call(@name, {:push, push_message, opts, on_response_callback})

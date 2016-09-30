@@ -1,4 +1,8 @@
 defmodule Dufa.APNS.Client do
+  @moduledoc """
+  The client that incapsulates interaction logic with APNS.
+  """
+
   use GenServer
   require Logger
 
@@ -43,8 +47,15 @@ defmodule Dufa.APNS.Client do
     Logger.error("#{reason}[#{status}]\n#{inspect(push_message)}")
   end
 
+  @doc """
+  Stops a `client` process.
+  """
   def stop(client), do: GenServer.stop(client)
 
+  @doc """
+  Pushes a `push_message` via `client`.
+  Invokes `on_response_callback` on a response.
+  """
   @spec push(pid(), Dufa.APNS.PushMessage.t, fun()) :: {:noreply, Map.t}
   def push(client, push_message = %PushMessage{}, on_response_callback \\ nil) do
     GenServer.cast(client, {:push, push_message, on_response_callback})
