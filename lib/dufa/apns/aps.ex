@@ -1,7 +1,7 @@
 defmodule Dufa.APNS.Aps do
   @derive [Poison.Encoder]
 
-  @type t :: %__MODULE__{content_available: boolean(),
+  @type t :: %__MODULE__{content_available: pos_integer(),
                          badge: pos_integer(),
                          sound: String.t,
                          alert: Dufa.APNS.Alert.t}
