@@ -124,6 +124,11 @@ With a callback:
 
 `Dufa.APNS.push(push_message, %{}, fn(_message, response) -> IO.inspect(response) end)`
 
+Callback function should receive two arguments:
+
+* message - the original push message sent (or tried to send)
+* response - `Dufa.APNS.Client` response
+
 With options:
 
 `Dufa.APNS.push(push_message, %{cert_file: "path/to/a/cert/file.pem"})`
