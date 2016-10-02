@@ -72,6 +72,7 @@ _We'll consider this approach below._
 Where:
 
 * `token` - a recipient device's token
+* `topic` - a notification's topic
 * `aps` - aps structure (see it's structure below)
 * `custom_data` - additional data payload (default = `%{}`)
 
