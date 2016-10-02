@@ -4,23 +4,26 @@ defmodule Dufa.HTTP2Client do
   """
 
   @spec uri(atom(), atom()) :: List.t
-  def uri(:apns, :dev), do: to_char_list("api.push.apple.com")
-  def uri(:apns, :prod), do: to_char_list("api.development.push.apple.com")
+  def uri(:apns, :prod), do: to_char_list("api.push.apple.com")
+  def uri(:apns, :dev), do: to_char_list("api.development.push.apple.com")
 
   @spec open_socket(atom(), Dufa.APNS.SSLConfig.t, pos_integer()) :: {:ok, pid()} |
                                                                      {:error, :open_socket, :timeout} |
                                                                      {:error, :ssl_config, :certificate_missed} |
                                                                      {:error, :ssl_config, :rsa_key_missed}
-  def open_socket(_, _, 3), do: {:error, :open_cosket, :timeout}
+  def open_socket(_, _, 3), do: {:error, :open_socket, :timeout}
   def open_socket(_provider, %{cert: nil}, _tries), do: {:error, :ssl_config, :certificate_missed}
   def open_socket(_provider, %{key: nil}, _tries), do: {:error, :ssl_config, :rsa_key_missed}
+  def open_socket(_provider, %{mode: nil}, _tries), do: {:error, :ssl_config, :mode_missed}
   def open_socket(provider, %{mode: mode, cert: cert, key: key} = ssl_config, tries) do
-    case :h2_client.start_link(:https, uri(provider, mode), socket_config({:cert, cert}, {:key, key})) do
+    config = socket_config({:cert, cert}, {:key, key})
+    result = :h2_client.start_link(:https, uri(provider, mode), config)
+    case result do
       {:ok, socket} -> {:ok, socket}
-      _ -> open_socket(provider, ssl_config, tries + 1)
+      _ -> open_socket(provider, ssl_config, (tries + 1))
     end
   end
-  def open_socket(_, _, _), do: {:error, :ssl_config, "Invalid SSL config"}
+  def open_socket(_, _, _), do: {:error, :ssl_config, :invalid_config}
 
   @spec send_request(pid(), List.t, String.t) :: {:ok, pid()} | any()
   def send_request(socket, headers, payload) do

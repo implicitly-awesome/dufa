@@ -64,6 +64,7 @@ _We'll consider this approach below._
 ```elixir
 {
   token: String.t,
+  topic: String.t,
   aps: Dufa.APNS.Aps.t,
   custom_data: Map.t
 }

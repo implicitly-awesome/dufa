@@ -79,6 +79,14 @@ defmodule Dufa.APNS.Client do
       {":path", "/3/device/#{device_token}"},
       {"content-length", "#{byte_size(json)}"}
     ]
+
+    headers =
+      if push_message.topic do
+        headers ++ [{"apns-topic", push_message.topic}]
+      else
+        headers
+      end
+
     HTTP2Client.send_request(socket, headers, json)
   end
 
