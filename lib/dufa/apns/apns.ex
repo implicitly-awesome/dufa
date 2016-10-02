@@ -32,6 +32,10 @@ defmodule Dufa.APNS do
     stop_and_push(push_message, opts, on_response_callback)
   end
 
+  def push(push_message, opts, on_response_callback) do
+    do_push(push_message, opts, on_response_callback)
+  end
+
   @spec push(Dufa.APNS.PushMessage.t, Map.t, fun()) :: {:noreply, Map.t}
   defp stop_and_push(push_message, opts, on_response_callback) do
     with {:ok, client} <- Dufa.APNS.Registry.lookup(:apns_registry, push_message.token) do

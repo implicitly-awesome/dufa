@@ -83,6 +83,7 @@ defmodule Dufa.APNS.SSLConfig do
       _ -> nil
     end
   end
+  def decode_file(_file_content, _type), do: nil
 
   @spec fetch_cert(List.t) :: binary() | nil
   defp fetch_cert([]), do: nil
