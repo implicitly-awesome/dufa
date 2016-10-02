@@ -9,8 +9,7 @@ Add necessary dependencies in `mix.exs` file of your project:
 ```elixir
 def deps do
   [
-    {:dufa, github: "madeinussr/dufa"},
-    {:chatterbox, github: "joedevivo/chatterbox"}
+    {:dufa, github: "madeinussr/dufa"}
   ]
 end
 ```
