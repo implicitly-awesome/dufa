@@ -1,4 +1,4 @@
-# Dufa
+# Dufa [![Build Status](https://img.shields.io/travis/madeinussr/dufa.svg?style=flat)](https://travis-ci.org/madeinussr/dufa)
 
 Library for sending push notifications via GCM and APN services.
 
