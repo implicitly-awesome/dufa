@@ -153,9 +153,7 @@ The possible `config/config.exs` configuration:
 
 ```elixir
 config :dufa,
-  apns_mode: :dev,
-  apns_cert_file: "a/path/to/cert/file.pem",
-  apns_key_file: "a/path/to/key/file.pem"
+  gcm_api_key: "your_api_key"
 ```
 
 _However, you can not to provide such configuration at all and pass all the stuff as options directly into `Dufa.GCM.push/3` function._
