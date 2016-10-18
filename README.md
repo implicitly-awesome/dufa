@@ -137,6 +137,7 @@ Possible options are:
 * `cert` - a certificate itself (binary data)
 * `key_file` - a path to RSA key's file
 * `key` - RSA key itself (binary data)
+* `delay` - delay before push will be sent (in seconds)
 
 If you provided a configuration in `config/config.exs` file earlier, options values have a priority.
 Actually, the priorities are:
@@ -209,6 +210,7 @@ With options:
 Possible options are:
 
 * `api_key` - your GCM API key
+* `delay` - delay before push will be sent (in seconds)
 
 If you provided a configuration in `config/config.exs` file earlier, options values have a priority.
 
