@@ -56,18 +56,38 @@ defmodule Dufa.APNS.Client do
   Pushes a `push_message` via `client`.
   Invokes `on_response_callback` on a response.
   """
-  @spec push(pid(), Dufa.APNS.PushMessage.t, fun()) :: {:noreply, Map.t}
-  def push(client, push_message = %PushMessage{}, on_response_callback \\ nil) do
-    GenServer.cast(client, {:push, push_message, on_response_callback})
+  @spec push(pid(), Dufa.APNS.PushMessage.t, Map.t | nil, fun() | nil) :: {:noreply, Map.t}
+  def push(client, push_message = %PushMessage{}, opts \\ %{}, on_response_callback \\ nil) do
+    GenServer.cast(client, {:push, push_message, opts, on_response_callback})
   end
 
-  def handle_cast({:push, push_message, on_response_callback}, state) do
-    do_push(push_message, state)
+  def handle_cast({:push, push_message, opts, on_response_callback}, state) do
     state =
       state
       |> Map.put(:push_message, push_message)
+      |> Map.put(:opts, opts)
       |> Map.put(:on_response_callback, on_response_callback)
+
+    if opts[:delay] && opts[:delay] > 0 do
+      Process.send_after(self, :delayed_push, opts[:delay] * 1000)
+    else
+      do_push(push_message, state)
+    end
+
     {:noreply, state}
+  end
+
+  def handle_info(:delayed_push, %{push_message: push_message} = state) do
+    do_push(push_message, state)
+    {:noreply, state}
+  end
+
+  def handle_info({:END_STREAM, stream},
+                  %{apns_socket: socket,
+                    on_response_callback: on_response_callback} = state) do
+    {:ok, {headers, body}} = HTTP2Client.get_response(socket, stream)
+
+    handle_response({headers, body}, state, on_response_callback)
   end
 
   @spec do_push(Dufa.APNS.PushMessage.t, %{apns_socket: pid(), device_token: String.t}) :: {:noreply, Map.t}
@@ -88,14 +108,6 @@ defmodule Dufa.APNS.Client do
       end
 
     HTTP2Client.send_request(socket, headers, json)
-  end
-
-  def handle_info({:END_STREAM, stream},
-                  %{apns_socket: socket,
-                    on_response_callback: on_response_callback} = state) do
-    {:ok, {headers, body}} = HTTP2Client.get_response(socket, stream)
-
-    handle_response({headers, body}, state, on_response_callback)
   end
 
   @spec fetch_status(List.t) :: String.t | nil

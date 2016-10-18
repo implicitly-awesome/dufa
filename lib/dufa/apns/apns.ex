@@ -48,6 +48,6 @@ defmodule Dufa.APNS do
   defp do_push(push_message, opts, on_response_callback) do
     :apns_registry
     |> Dufa.APNS.Registry.create(push_message.token, opts)
-    |> Dufa.APNS.Client.push(push_message, on_response_callback)
+    |> Dufa.APNS.Client.push(push_message, opts, on_response_callback)
   end
 end

@@ -26,7 +26,7 @@ defmodule Dufa.GCM.Client do
   Pushes a `push_message` via GCM with provided `opts` options asynchronously.
   Invokes a `on_response_callback` on a response.
   """
-  @spec push(pid(), Dufa.GCM.PushMessage.t, Map.t, fun() | nil) :: {:noreply, Map.t}
+  @spec push(pid(), Dufa.GCM.PushMessage.t, Map.t | nil, fun() | nil) :: {:noreply, Map.t}
   def push(client, push_message = %PushMessage{}, opts \\ %{}, on_response_callback \\ nil) do
     GenServer.cast(client, {:push, push_message, opts, on_response_callback})
   end
@@ -34,16 +34,18 @@ defmodule Dufa.GCM.Client do
   # api_key from opts has a priority
   def handle_cast({:push, push_message, opts, on_response_callback}, state) do
     if opts[:delay] && opts[:delay] > 0 do
-      state = %{push_message: push_message, opts: opts, on_response_callback: on_response_callback}
-      Process.send_after(self, :delayed_push, opts[:delay] * 1000)
+      state
+      |> Map.put(:push_message, push_message)
+      |> Map.put(:opts, opts)
+      |> Map.put(:on_response_callback, on_response_callback)
 
-      {:noreply, state}
+      Process.send_after(self, :delayed_push, opts[:delay] * 1000)
     else
       do_push(push_message, api_key_for(opts), on_response_callback)
-
       send(self, :kill_client)
-      {:noreply, state}
     end
+
+    {:noreply, state}
   end
 
   def handle_info(:kill_client, state) do
