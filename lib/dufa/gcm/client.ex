@@ -17,10 +17,10 @@ defmodule Dufa.GCM.Client do
   @uri_path "https://gcm-http.googleapis.com/gcm/send"
 
   def start_link do
-    GenServer.start_link(__MODULE__, [])
+    GenServer.start_link(__MODULE__, :ok)
   end
 
-  def init, do: {:ok, %{}}
+  def init(:ok), do: {:ok, %{}}
 
   @doc """
   Pushes a `push_message` via GCM with provided `opts` options asynchronously.
@@ -33,17 +33,17 @@ defmodule Dufa.GCM.Client do
 
   # api_key from opts has a priority
   def handle_cast({:push, push_message, opts, on_response_callback}, state) do
-    if opts[:delay] && opts[:delay] > 0 do
-      state
-      |> Map.put(:push_message, push_message)
-      |> Map.put(:opts, opts)
-      |> Map.put(:on_response_callback, on_response_callback)
-
-      Process.send_after(self, :delayed_push, opts[:delay] * 1000)
-    else
-      do_push(push_message, api_key_for(opts), on_response_callback)
-      send(self, :kill_client)
-    end
+    state = if opts[:delay] && opts[:delay] >= 1 do
+              Process.send_after(self, :delayed_push, opts[:delay] * 1000)
+              state
+              |> Map.put(:push_message, push_message)
+              |> Map.put(:opts, opts)
+              |> Map.put(:on_response_callback, on_response_callback)
+            else
+              do_push(push_message, api_key_for(opts), on_response_callback)
+              send(self, :kill_client)
+              state
+            end
 
     {:noreply, state}
   end

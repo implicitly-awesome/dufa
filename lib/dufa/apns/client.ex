@@ -68,7 +68,7 @@ defmodule Dufa.APNS.Client do
       |> Map.put(:opts, opts)
       |> Map.put(:on_response_callback, on_response_callback)
 
-    if opts[:delay] && opts[:delay] > 0 do
+    if opts[:delay] && opts[:delay] >= 1 do
       Process.send_after(self, :delayed_push, opts[:delay] * 1000)
     else
       do_push(push_message, state)
