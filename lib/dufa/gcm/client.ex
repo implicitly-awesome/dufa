@@ -4,6 +4,7 @@ defmodule Dufa.GCM.Client do
   """
 
   use GenServer
+
   require Logger
 
   alias Dufa.GCM.PushMessage
@@ -11,74 +12,74 @@ defmodule Dufa.GCM.Client do
   @type push_result :: {:error, :unauthorized} |
                        {:error, :unhandled_error} |
                        {:error, {String.t, List.t}} |
-                       :ok
+                       {:ok, Dufa.GCM.PushMessage.t, String.t}
 
-  @uri "https://gcm-http.googleapis.com"
-  @path "/gcm/send"
-  @name :gcm_client
+  @uri_path "https://gcm-http.googleapis.com/gcm/send"
 
-  def start_link(api_key) do
-    GenServer.start_link(__MODULE__, {:ok, api_key}, name: @name)
+  def start_link do
+    GenServer.start_link(__MODULE__, [])
   end
 
-  def init({:ok, api_key}), do: {:ok, %{api_key: api_key}}
+  def init, do: {:ok, %{}}
 
   @doc """
-  Stops the client process.
+  Pushes a `push_message` via GCM with provided `opts` options asynchronously.
+  Invokes a `on_response_callback` on a response.
   """
-  @spec stop() :: :ok
-  def stop, do: GenServer.stop(@name)
+  @spec push(pid(), Dufa.GCM.PushMessage.t, Map.t, fun() | nil) :: {:noreply, Map.t}
+  def push(client, push_message = %PushMessage{}, opts \\ %{}, on_response_callback \\ nil) do
+    GenServer.cast(client, {:push, push_message, opts, on_response_callback})
+  end
+
+  # api_key from opts has a priority
+  def handle_cast({:push, push_message, opts, on_response_callback}, state) do
+    do_push(push_message, api_key_for(opts), on_response_callback)
+
+    send(self, :kill_client)
+    {:noreply, state}
+  end
+
+  def handle_info(:kill_client, state) do
+    {:stop, :normal, state}
+  end
 
   @doc """
-  Pushes a `push_message` with `opts` options.
-  Invokes `on_response_callback` on a response.
+  Resolves api_key depends on passed `opts`.
   """
-  @spec push(Dufa.GCM.PushMessage.t, Map.t, fun()) :: {:reply, push_result, Map.t}
-  def push(push_message = %PushMessage{}, opts \\ %{}, on_response_callback \\ nil) do
-    GenServer.call(@name, {:push, push_message, opts, on_response_callback})
+  @spec api_key_for(Map.t) :: String.t
+  def api_key_for(opts \\ %{}) do
+    opts[:api_key] || Application.get_env(:dufa, :gcm_api_key)
   end
 
-  @spec log_error({String.t, String.t}, Dufa.GCM.PushMessage) :: :ok | {:error, any()}
-  defp log_error({status, reason}, push_message) do
-    Logger.error("#{reason}[#{status}]\n#{inspect(push_message)}")
-  end
-
-  def handle_call({:push, push_message, %{api_key: api_key}, on_response_callback}, _from, state) do
-    result = do_push(push_message, api_key, on_response_callback)
-    {:reply, result, state}
-  end
-  def handle_call({:push, push_message, _opts, on_response_callback}, _from, %{api_key: api_key} = state) do
-    result = do_push(push_message, api_key, on_response_callback)
-    {:reply, result, state}
-  end
-  def handle_call({:push, _push_message, _opts, _on_response_callback}, _from, state) do
-    {:reply, {:error, :api_key_not_found}, state}
-  end
-
-  @spec do_push(Dufa.GCM.PushMessage.t, String.t, fun()) :: push_result
-  defp do_push(push_message, api_key, on_response_callback) do
+  @doc """
+  Pushes a `push_message` synchronously via GCM with provided `api_key`.
+  Invokes a `on_response_callback` on a response.
+  """
+  @spec do_push(Dufa.GCM.PushMessage.t, String.t, fun() | nil) :: push_result
+  def do_push(push_message, api_key, on_response_callback \\ nil) do
     headers = [
       {"Content-Type", "application/json"},
       {"Authorization", "key=#{api_key}"}
     ]
 
-    payload = push_message |> Poison.encode!
-
-    result = HTTPoison.post("#{@uri}#{@path}", payload, headers)
+    payload = Poison.encode!(push_message)
+    result = HTTPoison.post("#{@uri_path}", payload, headers)
 
     case result do
       {:ok, %HTTPoison.Response{status_code: 200 = status, body: body}} ->
         handle_response(push_message, {status, body}, on_response_callback)
       {:ok, %HTTPoison.Response{status_code: 401}} ->
         Logger.error "Unauthorized API key."
+        if on_response_callback, do: on_response_callback.(push_message, {:error, :unauthorized})
         {:error, :unauthorized}
       _ ->
         Logger.error "Unhandled error."
+        if on_response_callback, do: on_response_callback.(push_message, {:error, :unhandled_error})
         {:error, :unhandled_error}
     end
   end
 
-  @spec handle_response(Dufa.GCM.PushMessage.t, {String.t, String.t}, fun()) :: :ok | {:error, {String.t, List.t}}
+  @spec handle_response(Dufa.GCM.PushMessage.t, {String.t, String.t}, fun() | nil) :: :ok | {:error, {String.t, List.t}}
   defp handle_response(push_message, {status, body}, on_response_callback) do
     errors =
       body
@@ -93,11 +94,16 @@ defmodule Dufa.GCM.Client do
       {:error, {status, Keyword.values(errors)}}
     else
       if on_response_callback, do: on_response_callback.(push_message, body)
-      :ok
+      {:ok, push_message, body}
     end
   end
 
   @spec handle_result(Map.t) :: :ok | {:error, String.t}
   defp handle_result(%{"error" => message}), do: {:error, message}
   defp handle_result(_), do: :ok
+
+  @spec log_error({String.t, String.t}, Dufa.GCM.PushMessage) :: :ok | {:error, any()}
+  defp log_error({status, reason}, push_message) do
+    Logger.error("#{reason}[#{status}]\n#{inspect(push_message)}")
+  end
 end

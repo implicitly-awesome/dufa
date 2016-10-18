@@ -9,7 +9,7 @@ defmodule Dufa.APNS do
   Pushes a `push_message` via APNS with provided `opts` options.
   Invokes a `on_response_callback` on a response.
   """
-  @spec push(Dufa.APNS.PushMessage.t, Map.t, fun()) :: {:noreply, Map.t}
+  @spec push(Dufa.APNS.PushMessage.t, Map.t, fun() | nil) :: {:noreply, Map.t}
   def push(push_message, opts \\ %{}, on_response_callback \\ nil)
 
   def push(push_message, %{mode: _mode} = opts, on_response_callback) do

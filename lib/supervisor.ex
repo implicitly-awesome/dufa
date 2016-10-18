@@ -7,9 +7,9 @@ defmodule Dufa.Supervisor do
 
   def init(:ok) do
     children = [
-      worker(Dufa.GCM.Client, [Application.get_env(:dufa, :gcm_api_key)], id: Dufa.GCM.Client),
       worker(Dufa.APNS.Registry, [:apns_registry], id: Dufa.APNS.Registry),
-      supervisor(Dufa.APNS.Supervisor, [])
+      supervisor(Dufa.APNS.Supervisor, []),
+      supervisor(Dufa.GCM.Supervisor, [])
     ]
 
     supervise(children, strategy: :rest_for_one)

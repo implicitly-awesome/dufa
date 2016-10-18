@@ -9,8 +9,7 @@ defmodule GCM.ClientTest do
 
   @client_name :gcm_client
 
-  @uri "https://gcm-http.googleapis.com"
-  @path "/gcm/send"
+  @uri_path "https://gcm-http.googleapis.com/gcm/send"
 
   @successful_response %HTTPoison.Response{
     status_code: 200,
@@ -20,14 +19,6 @@ defmodule GCM.ClientTest do
     status_code: 200,
     body: ~S({"results":[{"error":"oops"}, {"error":"oops2"}]})
   }
-
-  def successful_callback(_push_message, response) do
-    assert response == @successful_response.body
-  end
-
-  def error_callback(_push_message, response) do
-    assert response == {:error, {200, ["oops", "oops2"]}}
-  end
 
   setup do
     registration_id = "your_registration_id"
@@ -41,64 +32,116 @@ defmodule GCM.ClientTest do
     {:ok, push_message: push_message}
   end
 
-  test "stop/0: stops the client" do
-    client = Process.whereis(@client_name)
-    Client.stop
-    refute Process.alive?(client)
-  end
+  test "push/4: stops current process", %{push_message: push_message} do
+    with_mock(HTTPoison, [post: fn (_, _, _) -> @successful_response end]) do
+      {:ok, client} = Dufa.GCM.Supervisor.start_client
+      Client.push(client, push_message, %{}, nil)
 
-  test_with_mock "push/2: gets gcm_api_key from the config",
-                 %{push_message: push_message},
-                 HTTPoison,
-                 [],
-                 [post: fn(_, _, _) -> {:ok, @successful_response} end] do
-    headers = [
-      {"Content-Type", "application/json"},
-      {"Authorization", "key=#{Application.get_env(:dufa, :gcm_api_key)}"}
-    ]
-    Client.push(push_message)
-
-    assert called HTTPoison.post("#{@uri}#{@path}", Poison.encode!(push_message), headers)
-  end
-
-  test_with_mock "push/2: gets gcm_api_key from opts",
-                 %{push_message: push_message},
-                 HTTPoison,
-                 [],
-                 [post: fn(_, _, _) -> {:ok, @successful_response} end] do
-    api_key = "some_key"
-    headers = [
-      {"Content-Type", "application/json"},
-      {"Authorization", "key=#{api_key}"}
-    ]
-    Client.push(push_message, %{api_key: api_key})
-
-    assert called HTTPoison.post("#{@uri}#{@path}", Poison.encode!(push_message), headers)
-  end
-
-  test "push/3: sends push notification", %{push_message: push_message} do
-    with_mock(HTTPoison, [], [post: fn (_,_,_) -> {:ok, @successful_response} end]) do
-      Client.push(push_message)
-
-      headers = [
-        {"Content-Type", "application/json"},
-        {"Authorization", "key=#{Application.get_env(:dufa, :gcm_api_key)}"}
-      ]
-      payload = push_message |> Poison.encode!
-
-      assert called HTTPoison.post("#{@uri}#{@path}", payload, headers)
+      ref = Process.monitor(client)
+      assert_receive {:DOWN, ^ref, _, _, _}
+      refute Process.alive?(client)
     end
   end
 
-  test "push/3: sends push notification and invokes a callback", %{push_message: push_message} do
-    with_mock(HTTPoison, [], [post: fn (_,_,_) -> {:ok, @successful_response} end]) do
-      Client.push(push_message, [], &__MODULE__.successful_callback/2)
+  test "api_key_for/1: returns the value if opts has :api_key key" do
+    assert Client.api_key_for(%{api_key: "qwerty"}) == "qwerty"
+  end
+
+  test "api_key_for/1: returns the value from the config if opts has not :api_key key" do
+    assert Client.api_key_for(%{not_api_key: "qwerty"}) == Application.get_env(:dufa, :gcm_api_key)
+  end
+
+  test "do_push/3: makes a proper POST to GCM servise", %{push_message: push_message} do
+    headers = [
+      {"Content-Type", "application/json"},
+      {"Authorization", "key=qwerty"}
+    ]
+
+    payload = Poison.encode!(push_message)
+
+    with_mock(HTTPoison, [post: fn (_, _, _) -> @successful_response end]) do
+      Client.do_push(push_message, "qwerty", nil)
+      assert called HTTPoison.post(@uri_path, payload, headers)
     end
   end
 
-  test "push/3: handles error response and invoke a callback", %{push_message: push_message} do
-    with_mock(HTTPoison, [], [post: fn (_,_,_) -> {:ok, @errors_response} end]) do
-      Client.push(push_message, [], &__MODULE__.error_callback/2)
+  test "do_push/3: returns {:error, :unauthorized} if response status is 401", %{push_message: push_message} do
+    with_mock(HTTPoison, [post: fn (_, _, _) -> {:ok, %HTTPoison.Response{status_code: 401}} end]) do
+      assert Client.do_push(push_message, "", nil) == {:error, :unauthorized}
+    end
+  end
+
+  test "do_push/3: returns {:error, :unhandled_error} if response status is neither 200 nor 401", %{push_message: push_message} do
+    with_mock(HTTPoison, [post: fn (_, _, _) -> {:ok, %HTTPoison.Response{status_code: 500}} end]) do
+      assert Client.do_push(push_message, "", nil) == {:error, :unhandled_error}
+    end
+  end
+
+  test "do_push/3: returns {:error, {status, errors_messages}} if response status is 200 and body has any error", %{push_message: push_message} do
+    with_mock(HTTPoison, [post: fn (_, _, _) -> {:ok, @errors_response} end]) do
+      assert Client.do_push(push_message, "", nil) == {:error, {200, ["oops", "oops2"]}}
+    end
+  end
+
+  test "do_push/3: returns {:ok, push_message, body} if response status is 200 and body has not errors", %{push_message: push_message} do
+    with_mock(HTTPoison, [post: fn (_, _, _) -> {:ok, @successful_response} end]) do
+      assert Client.do_push(push_message, "", nil) == {:ok, push_message, @successful_response.body}
+    end
+  end
+
+  test "do_push/3: invokes a callback on successful response", %{push_message: push_message} do
+    with_mock(HTTPoison, [post: fn (_, _, _) -> {:ok, @successful_response} end]) do
+      defmodule Callbacker do
+        def callback(_push_message, response), do: response
+      end
+
+      with_mock(Callbacker, [callback: fn (_, response) -> response end]) do
+        callback = fn (push_message, response) -> Callbacker.callback(push_message, response) end
+        assert Client.do_push(push_message, "", callback)
+        assert called Callbacker.callback(push_message, @successful_response.body)
+      end
+    end
+  end
+
+  test "do_push/3: invokes a callback on error response", %{push_message: push_message} do
+    with_mock(HTTPoison, [post: fn (_, _, _) -> {:ok, @errors_response} end]) do
+      defmodule Callbacker do
+        def callback(_push_message, response), do: response
+      end
+
+      with_mock(Callbacker, [callback: fn (_, response) -> response end]) do
+        callback = fn (push_message, response) -> Callbacker.callback(push_message, response) end
+        assert Client.do_push(push_message, "", callback)
+        assert called Callbacker.callback(push_message, {:error, {200, ["oops", "oops2"]}})
+      end
+    end
+  end
+
+  test "do_push/3: invokes a callback on unauthorized request", %{push_message: push_message} do
+    with_mock(HTTPoison, [post: fn (_, _, _) -> {:ok, %HTTPoison.Response{status_code: 401}} end]) do
+      defmodule Callbacker do
+        def callback(_push_message, response), do: response
+      end
+
+      with_mock(Callbacker, [callback: fn (_, response) -> response end]) do
+        callback = fn (push_message, response) -> Callbacker.callback(push_message, response) end
+        assert Client.do_push(push_message, "", callback)
+        assert called Callbacker.callback(push_message, {:error, :unauthorized})
+      end
+    end
+  end
+
+  test "do_push/3: invokes a callback on request with unhandled error", %{push_message: push_message} do
+    with_mock(HTTPoison, [post: fn (_, _, _) -> {:ok, %HTTPoison.Response{status_code: 500}} end]) do
+      defmodule Callbacker do
+        def callback(_push_message, response), do: response
+      end
+
+      with_mock(Callbacker, [callback: fn (_, response) -> response end]) do
+        callback = fn (push_message, response) -> Callbacker.callback(push_message, response) end
+        assert Client.do_push(push_message, "", callback)
+        assert called Callbacker.callback(push_message, {:error, :unhandled_error})
+      end
     end
   end
 end
