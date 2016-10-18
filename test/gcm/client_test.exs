@@ -1,5 +1,5 @@
 defmodule GCM.ClientTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
 
   import Mock
 
@@ -142,6 +142,26 @@ defmodule GCM.ClientTest do
         assert Client.do_push(push_message, "", callback)
         assert called Callbacker.callback(push_message, {:error, :unhandled_error})
       end
+    end
+  end
+
+  test "push/3: if opts[:delay] == true send push with defined delay", %{push_message: push_message} do
+    with_mock(HTTPoison, [post: fn (_, _, _) -> {:ok, @successful_response} end]) do
+      opts = %{delay: 1}
+      t1 = :erlang.timestamp
+
+      callback = fn (_push_message, _response) ->
+        t2 = :erlang.timestamp
+        assert :timer.now_diff(t2, t1) >= opts[:delay] * 1_000_000
+      end
+
+      {:ok, client} = Dufa.GCM.Supervisor.start_client
+      ref = Process.monitor(client)
+
+      Client.push(client, push_message, opts, callback)
+
+      assert_receive {:DOWN, ^ref, _, _, _}, opts[:delay] * 1000 + 100
+      refute Process.alive?(client)
     end
   end
 end

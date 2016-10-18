@@ -33,13 +33,25 @@ defmodule Dufa.GCM.Client do
 
   # api_key from opts has a priority
   def handle_cast({:push, push_message, opts, on_response_callback}, state) do
-    do_push(push_message, api_key_for(opts), on_response_callback)
+    if opts[:delay] && opts[:delay] > 0 do
+      state = %{push_message: push_message, opts: opts, on_response_callback: on_response_callback}
+      Process.send_after(self, :delayed_push, opts[:delay] * 1000)
 
-    send(self, :kill_client)
-    {:noreply, state}
+      {:noreply, state}
+    else
+      do_push(push_message, api_key_for(opts), on_response_callback)
+
+      send(self, :kill_client)
+      {:noreply, state}
+    end
   end
 
   def handle_info(:kill_client, state) do
+    {:stop, :normal, state}
+  end
+
+  def handle_info(:delayed_push, %{push_message: push_message, opts: opts, on_response_callback: on_response_callback} = state) do
+    do_push(push_message, api_key_for(opts), on_response_callback)
     {:stop, :normal, state}
   end
 
