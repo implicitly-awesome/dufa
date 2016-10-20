@@ -1,5 +1,5 @@
 defmodule APNS.ClientTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   import Mock
 
@@ -41,54 +41,6 @@ defmodule APNS.ClientTest do
     {:ok, client} = Client.start_link("device_token", ssl_config)
     Client.stop(client)
     refute Process.alive?(client)
-  end
-
-  test_with_mock "push/3: sends push notification and invoke a callback",
-                 %{ssl_config: ssl_config, ok_response: {_, ok_body} = ok_response, push_message: push_message},
-                 HTTP2Client,
-                 [],
-                 [open_socket: fn (_, _, _) -> {:ok, nil} end,
-                  send_request: fn (_, _, _) -> {:ok, nil} end,
-                  get_response: fn (_, _) -> {:ok, ok_response} end] do
-    {:ok, client} = Client.start_link("device_token", ssl_config)
-
-    defmodule Callbacker do
-      def callback(_push_message, response), do: response
-    end
-
-    with_mock(Callbacker, [callback: fn (_, response) -> response end]) do
-      callback = fn (push_message, response) -> Callbacker.callback(push_message, response) end
-      assert Client.push(client, push_message, %{}, callback) == :ok
-      Client.handle_info({:END_STREAM, nil},
-                         %{apns_socket: nil,
-                           push_message: push_message,
-                           on_response_callback: callback})
-      assert called Callbacker.callback(push_message, ok_body)
-    end
-  end
-
-  test_with_mock "push/3: handles error response and invoke a callback",
-                 %{ssl_config: ssl_config, error_response: {_, error_body} = error_response, push_message: push_message},
-                 HTTP2Client,
-                 [],
-                 [open_socket: fn (_, _, _) -> {:ok, nil} end,
-                  send_request: fn (_, _, _) -> {:ok, nil} end,
-                  get_response: fn (_, _) -> {:ok, error_response} end] do
-    {:ok, client} = Client.start_link("device_token", ssl_config)
-
-    defmodule Callbacker do
-      def callback(_push_message, response), do: response
-    end
-
-    with_mock(Callbacker, [callback: fn (_, response) -> response end]) do
-      callback = fn (push_message, response) -> Callbacker.callback(push_message, response) end
-      assert Client.push(client, push_message, %{}, callback) == :ok
-      Client.handle_info({:END_STREAM, nil},
-                         %{apns_socket: nil,
-                           push_message: push_message,
-                           on_response_callback: callback})
-      assert called Callbacker.callback(push_message, {:error, {"400", "aaaaa!"}})
-    end
   end
 
   test "current_ssl_config/1: returns ssl config of the client" do

@@ -1,5 +1,5 @@
 defmodule GCM.ClientTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   import Mock
 
