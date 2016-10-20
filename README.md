@@ -179,7 +179,8 @@ _We'll consider this approach below._
   title: String.t,
   body: String.t,
   icon: String.t,
-  sound: String.t
+  sound: String.t,
+  click_action: String.t
 }
 ```
 
