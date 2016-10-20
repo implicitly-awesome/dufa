@@ -42,6 +42,10 @@ defmodule Dufa.APNS.Client do
     end
   end
 
+  def current_ssl_config(client) do
+    :sys.get_state(client)[:config]
+  end
+
   @spec log_error({String.t, String.t}, Dufa.APNS.PushMessage) :: :ok | {:error, any()}
   defp log_error({status, reason}, push_message) do
     Logger.error("#{reason}[#{status}]\n#{inspect(push_message)}")

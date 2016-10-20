@@ -6,7 +6,8 @@ defmodule Dufa.GCM.Notification do
   @type t :: %__MODULE__{title: String.t,
                          body: String.t,
                          icon: String.t,
-                         sound: String.t}
+                         sound: String.t,
+                         click_action: String.t}
 
-  defstruct [:title, :body, :icon, :sound]
+  defstruct [:title, :body, :icon, :sound, :click_action]
 end

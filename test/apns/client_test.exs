@@ -90,4 +90,19 @@ defmodule APNS.ClientTest do
       assert called Callbacker.callback(push_message, {:error, {"400", "aaaaa!"}})
     end
   end
+
+  test "current_ssl_config/1: returns ssl config of the client" do
+    ssl_config = SSLConfig.new(%{
+      mode: :dev,
+      cert: :qwe,
+      key:  :rty
+    })
+
+    with_mock(HTTP2Client, [open_socket: fn (_,_,_) -> {:ok, nil} end]) do
+      {:ok, client} = Client.start_link("device_token", ssl_config)
+      assert Client.current_ssl_config(client).mode == :dev
+      assert Client.current_ssl_config(client).cert == :qwe
+      assert Client.current_ssl_config(client).key  == :rty
+    end
+  end
 end

@@ -3,7 +3,7 @@ defmodule Dufa.APNS.SSLConfig do
   Defines APNS SSL configuration structure and provides a configuration's constructor.
   """
 
-  defstruct ~w(mode cert cert_file key key_file)a
+  defstruct ~w(mode cert key)a
 
   @enforce_keys [:mode]
 
@@ -26,8 +26,8 @@ defmodule Dufa.APNS.SSLConfig do
   @spec new(Map.t) :: __MODULE__.t
   def new(args \\ %{}) do
     mode = Map.get(args, :mode) || config_mode
-    cert = Map.get(args, :cert) || cert(Map.get(args, :cert_file)) || cert(config_cert_file)
-    key =  Map.get(args, :key)  || key(Map.get(args, :key_file))   || key(config_key_file)
+    cert = Map.get(args, :cert) || cert(config_cert_file)
+    key =  Map.get(args, :key)  || key(config_key_file)
 
     %__MODULE__{
       mode: mode,

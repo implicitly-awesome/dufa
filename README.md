@@ -133,9 +133,7 @@ With options:
 Possible options are:
 
 * `mode` - a APNS push mode (:dev or :prod)
-* `cert_file` - a path to a certificate's file
 * `cert` - a certificate itself (binary data)
-* `key_file` - a path to RSA key's file
 * `key` - RSA key itself (binary data)
 * `delay` - delay before push will be sent (in seconds)
 

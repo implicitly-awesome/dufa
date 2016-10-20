@@ -71,9 +71,9 @@ defmodule GCM.ClientTest do
     end
   end
 
-  test "do_push/3: returns {:error, :unhandled_error} if response status is neither 200 nor 401", %{push_message: push_message} do
-    with_mock(HTTPoison, [post: fn (_, _, _) -> {:ok, %HTTPoison.Response{status_code: 500}} end]) do
-      assert Client.do_push(push_message, "", nil) == {:error, :unhandled_error}
+  test "do_push/3: returns {:error, _post_result_} if response status is neither 200 nor 401", %{push_message: push_message} do
+    with_mock(HTTPoison, [post: fn (_, _, _) -> {:ok, %HTTPoison.Response{status_code: 500, body: "omg"}} end]) do
+      assert Client.do_push(push_message, "", nil) == {:error, {:ok, %HTTPoison.Response{status_code: 500, body: "omg"}}}
     end
   end
 
@@ -140,7 +140,7 @@ defmodule GCM.ClientTest do
       with_mock(Callbacker, [callback: fn (_, response) -> response end]) do
         callback = fn (push_message, response) -> Callbacker.callback(push_message, response) end
         assert Client.do_push(push_message, "", callback)
-        assert called Callbacker.callback(push_message, {:error, :unhandled_error})
+        assert called Callbacker.callback(push_message, {:error, {:ok, %HTTPoison.Response{status_code: 500}}})
       end
     end
   end

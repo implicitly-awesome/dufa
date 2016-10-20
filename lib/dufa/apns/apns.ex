@@ -20,15 +20,7 @@ defmodule Dufa.APNS do
     stop_and_push(push_message, opts, on_response_callback)
   end
 
-  def push(push_message, %{cert_file: _cert_file} = opts, on_response_callback) do
-    stop_and_push(push_message, opts, on_response_callback)
-  end
-
   def push(push_message, %{key: _key} = opts, on_response_callback) do
-    stop_and_push(push_message, opts, on_response_callback)
-  end
-
-  def push(push_message, %{key_file: _key_file} = opts, on_response_callback) do
     stop_and_push(push_message, opts, on_response_callback)
   end
 
@@ -39,9 +31,17 @@ defmodule Dufa.APNS do
   @spec push(Dufa.APNS.PushMessage.t, Map.t, fun()) :: {:noreply, Map.t}
   defp stop_and_push(push_message, opts, on_response_callback) do
     with {:ok, client} <- Dufa.APNS.Registry.lookup(:apns_registry, push_message.token) do
-      Dufa.APNS.Client.stop(client)
+      unless opts_equal?(opts, Dufa.APNS.Client.current_ssl_config(client)) do
+        Dufa.APNS.Client.stop(client)
+      end
     end
     do_push(push_message, opts, on_response_callback)
+  end
+
+  defp opts_equal?(opts, config) do
+    opts[:mode] == config.mode &&
+    opts[:cert] == config.cert &&
+    opts[:key]  == config.key
   end
 
   @spec push(Dufa.APNS.PushMessage.t, Map.t, fun()) :: {:noreply, Map.t}

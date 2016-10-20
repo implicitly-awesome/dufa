@@ -10,8 +10,8 @@ defmodule Dufa.GCM.Client do
   alias Dufa.GCM.PushMessage
 
   @type push_result :: {:error, :unauthorized} |
-                       {:error, :unhandled_error} |
                        {:error, {String.t, List.t}} |
+                       {:error, HTTPoison.Response.t} |
                        {:ok, Dufa.GCM.PushMessage.t, String.t}
 
   @uri_path "https://gcm-http.googleapis.com/gcm/send"
@@ -88,8 +88,8 @@ defmodule Dufa.GCM.Client do
         {:error, :unauthorized}
       _ ->
         Logger.error "Unhandled error."
-        if on_response_callback, do: on_response_callback.(push_message, {:error, :unhandled_error})
-        {:error, :unhandled_error}
+        if on_response_callback, do: on_response_callback.(push_message, {:error, result})
+        {:error, result}
     end
   end
 
