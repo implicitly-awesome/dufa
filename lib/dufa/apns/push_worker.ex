@@ -5,6 +5,8 @@ defmodule Dufa.APNS.PushWorker do
   alias Dufa.APNS.PushMessage
   alias Dufa.HTTP2Client
 
+  @type push_result :: {:ok, String.t} | {:error, Map.t}
+
   def start_link(push_state) do
     GenServer.start_link(__MODULE__, {:ok, push_state})
   end
@@ -68,12 +70,12 @@ defmodule Dufa.APNS.PushWorker do
   defp fetch_status([_head | tail]), do: fetch_status(tail)
   defp fetch_status(_), do: nil
 
-  @spec handle_response({List.t, String.t}, Map.t, fun()) :: {:noreply, Map.t}
+  @spec handle_response({List.t, String.t}, Map.t, ((PushMessage.t, push_result) -> any()) | nil) :: {:noreply, Map.t}
   defp handle_response({headers, body}, state, on_response_callback)
          when (is_function(on_response_callback) or is_nil(on_response_callback)) do
     case fetch_status(headers) do
       "200" ->
-        if on_response_callback, do: on_response_callback.(state.push_message, body)
+        if on_response_callback, do: on_response_callback.(state.push_message, {:ok, body})
         {:noreply, state}
       nil ->
         {:noreply, state}

@@ -72,7 +72,7 @@ defmodule APNS.PushWorkerTest do
                                on_response_callback: callback})
 
       assert called HTTP2Client.send_request("socket", headers, json)
-      assert called Callbacker.callback(push_message, ok_body)
+      assert called Callbacker.callback(push_message, {:ok, ok_body})
     end
   end
 

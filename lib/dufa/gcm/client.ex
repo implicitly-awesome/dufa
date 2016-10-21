@@ -26,7 +26,7 @@ defmodule Dufa.GCM.Client do
   Pushes a `push_message` via GCM with provided `opts` options asynchronously.
   Invokes a `on_response_callback` on a response.
   """
-  @spec push(pid(), Dufa.GCM.PushMessage.t, Map.t | nil, fun() | nil) :: {:noreply, Map.t}
+  @spec push(pid(), Dufa.GCM.PushMessage.t, Map.t | nil, ((PushMessage.t, push_result) -> any()) | nil) :: {:noreply, Map.t}
   def push(client, push_message = %PushMessage{}, opts \\ %{}, on_response_callback \\ nil) do
     GenServer.cast(client, {:push, push_message, opts, on_response_callback})
   end
@@ -69,7 +69,7 @@ defmodule Dufa.GCM.Client do
   Pushes a `push_message` synchronously via GCM with provided `api_key`.
   Invokes a `on_response_callback` on a response.
   """
-  @spec do_push(Dufa.GCM.PushMessage.t, String.t, fun() | nil) :: push_result
+  @spec do_push(Dufa.GCM.PushMessage.t, String.t, ((PushMessage.t, push_result) -> any()) | nil) :: push_result
   def do_push(push_message, api_key, on_response_callback \\ nil) do
     headers = [
       {"Content-Type", "application/json"},
@@ -93,7 +93,7 @@ defmodule Dufa.GCM.Client do
     end
   end
 
-  @spec handle_response(Dufa.GCM.PushMessage.t, {String.t, String.t}, fun() | nil) :: :ok | {:error, {String.t, List.t}}
+  @spec handle_response(Dufa.GCM.PushMessage.t, {String.t, String.t}, ((PushMessage.t, push_result) -> any()) | nil) :: :ok | {:error, {String.t, List.t}}
   defp handle_response(push_message, {status, body}, on_response_callback) do
     errors =
       body

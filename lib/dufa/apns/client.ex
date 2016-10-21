@@ -9,6 +9,8 @@ defmodule Dufa.APNS.Client do
   alias Dufa.APNS.PushMessage
   alias Dufa.HTTP2Client
 
+  @type push_result :: {:ok, String.t} | {:error, Map.t}
+
   @type open_socket_result :: {:ok, Map.t} |
                               {:stop, {:error, :timeout}} |
                               {:stop, {:error, :invalid_config}} |
@@ -59,7 +61,7 @@ defmodule Dufa.APNS.Client do
   Pushes a `push_message` via `client`.
   Invokes `on_response_callback` on a response.
   """
-  @spec push(pid(), Dufa.APNS.PushMessage.t, Map.t | nil, fun() | nil) :: {:noreply, Map.t}
+  @spec push(pid(), Dufa.APNS.PushMessage.t, Map.t | nil, ((PushMessage.t, push_result) -> any()) | nil) :: {:noreply, Map.t}
   def push(client, push_message = %PushMessage{}, opts \\ %{}, on_response_callback \\ nil) do
     GenServer.cast(client, {:push, push_message, opts, on_response_callback})
   end
