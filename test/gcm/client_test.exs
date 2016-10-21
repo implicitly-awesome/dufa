@@ -71,21 +71,21 @@ defmodule GCM.ClientTest do
     end
   end
 
-  test "do_push/3: returns {:error, _post_result_} if response status is neither 200 nor 401", %{push_message: push_message} do
+  test "do_push/3: returns {:error, %{status: pos_integer(), body: any()}} if response status is neither 200 nor 401", %{push_message: push_message} do
     with_mock(HTTPoison, [post: fn (_, _, _) -> {:ok, %HTTPoison.Response{status_code: 500, body: "omg"}} end]) do
-      assert Client.do_push(push_message, "", nil) == {:error, {:ok, %HTTPoison.Response{status_code: 500, body: "omg"}}}
+      assert Client.do_push(push_message, "", nil) == {:error, %{status: 500, body: "omg"}}
     end
   end
 
-  test "do_push/3: returns {:error, {status, errors_messages}} if response status is 200 and body has any error", %{push_message: push_message} do
+  test "do_push/3: returns {:error, %{status: pos_integer(), body: any()}} if response status is 200 and body has any error", %{push_message: push_message} do
     with_mock(HTTPoison, [post: fn (_, _, _) -> {:ok, @errors_response} end]) do
-      assert Client.do_push(push_message, "", nil) == {:error, {200, ["oops", "oops2"]}}
+      assert Client.do_push(push_message, "", nil) == {:error, %{status: @errors_response.status_code, body: @errors_response.body}}
     end
   end
 
-  test "do_push/3: returns {:ok, push_message, body} if response status is 200 and body has not errors", %{push_message: push_message} do
+  test "do_push/3: returns {:ok, %{status: pos_integer(), body: any()}} if response status is 200 and body has not errors", %{push_message: push_message} do
     with_mock(HTTPoison, [post: fn (_, _, _) -> {:ok, @successful_response} end]) do
-      assert Client.do_push(push_message, "", nil) == {:ok, push_message, @successful_response.body}
+      assert Client.do_push(push_message, "", nil) == {:ok, %{status: @successful_response.status_code, body: @successful_response.body}}
     end
   end
 
@@ -98,7 +98,7 @@ defmodule GCM.ClientTest do
       with_mock(Callbacker, [callback: fn (_, response) -> response end]) do
         callback = fn (push_message, response) -> Callbacker.callback(push_message, response) end
         assert Client.do_push(push_message, "", callback)
-        assert called Callbacker.callback(push_message, @successful_response.body)
+        assert called Callbacker.callback(push_message, {:ok, %{status: @successful_response.status_code, body: @successful_response.body}})
       end
     end
   end
@@ -112,7 +112,7 @@ defmodule GCM.ClientTest do
       with_mock(Callbacker, [callback: fn (_, response) -> response end]) do
         callback = fn (push_message, response) -> Callbacker.callback(push_message, response) end
         assert Client.do_push(push_message, "", callback)
-        assert called Callbacker.callback(push_message, {:error, {200, ["oops", "oops2"]}})
+        assert called Callbacker.callback(push_message, {:error, %{status: @errors_response.status_code, body: @errors_response.body}})
       end
     end
   end
@@ -126,7 +126,7 @@ defmodule GCM.ClientTest do
       with_mock(Callbacker, [callback: fn (_, response) -> response end]) do
         callback = fn (push_message, response) -> Callbacker.callback(push_message, response) end
         assert Client.do_push(push_message, "", callback)
-        assert called Callbacker.callback(push_message, {:error, :unauthorized})
+        assert called Callbacker.callback(push_message, {:error, %{status: 401, body: nil}})
       end
     end
   end
@@ -140,7 +140,7 @@ defmodule GCM.ClientTest do
       with_mock(Callbacker, [callback: fn (_, response) -> response end]) do
         callback = fn (push_message, response) -> Callbacker.callback(push_message, response) end
         assert Client.do_push(push_message, "", callback)
-        assert called Callbacker.callback(push_message, {:error, {:ok, %HTTPoison.Response{status_code: 500}}})
+        assert called Callbacker.callback(push_message, {:error, %{status: 500, body: nil}})
       end
     end
   end

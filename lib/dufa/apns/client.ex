@@ -76,12 +76,7 @@ defmodule Dufa.APNS.Client do
     }
 
     {:ok, worker} = Dufa.APNS.PushWorker.start_link(push_state)
-
-    if opts[:delay] && opts[:delay] >= 1 do
-      Process.send_after(worker, :push, opts[:delay] * 1000)
-    else
-      Process.send_after(worker, :push, 1)
-    end
+    Dufa.APNS.PushWorker.push(worker, opts[:delay])
 
     {:noreply, state}
   end

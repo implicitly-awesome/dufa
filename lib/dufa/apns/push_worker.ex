@@ -5,7 +5,8 @@ defmodule Dufa.APNS.PushWorker do
   alias Dufa.APNS.PushMessage
   alias Dufa.HTTP2Client
 
-  @type push_result :: {:ok, String.t} | {:error, Map.t}
+  @type push_result :: {:ok, %{status: pos_integer(), body: any()}} |
+                       {:error, %{status: pos_integer(), body: any()}}
 
   def start_link(push_state) do
     GenServer.start_link(__MODULE__, {:ok, push_state})
@@ -18,6 +19,18 @@ defmodule Dufa.APNS.PushWorker do
   @spec log_error({String.t, String.t}, PushMessage.t) :: :ok | {:error, any()}
   defp log_error({status, reason}, push_message) do
     Logger.error("#{reason}[#{status}]\n#{inspect(push_message)}")
+  end
+
+  def push(worker, delay) when is_integer(delay) do
+    if delay && delay >= 1 do
+      Process.send_after(worker, :push, delay * 1000)
+    else
+      Process.send(worker, :push, [])
+    end
+  end
+  def push(worker, _delay) do
+    Process.send(worker, :kill_worker, [])
+    :nothing
   end
 
   def handle_info(:push, %{apns_socket: _apns_socket,
@@ -40,7 +53,7 @@ defmodule Dufa.APNS.PushWorker do
 
     handle_response({headers, body}, state, on_response_callback)
 
-    send(self, :kill_worker)
+    Process.send(self, :kill_worker, [])
     {:noreply, state}
   end
 
@@ -66,23 +79,23 @@ defmodule Dufa.APNS.PushWorker do
 
   @spec fetch_status(List.t) :: String.t | nil
   defp fetch_status([]), do: nil
-  defp fetch_status([{":status", status} | _tail]), do: status
+  defp fetch_status([{":status", status} | _tail]), do: String.to_integer(status)
   defp fetch_status([_head | tail]), do: fetch_status(tail)
   defp fetch_status(_), do: nil
 
   @spec handle_response({List.t, String.t}, Map.t, ((PushMessage.t, push_result) -> any()) | nil) :: {:noreply, Map.t}
   defp handle_response({headers, body}, state, on_response_callback)
          when (is_function(on_response_callback) or is_nil(on_response_callback)) do
-    case fetch_status(headers) do
-      "200" ->
-        if on_response_callback, do: on_response_callback.(state.push_message, {:ok, body})
+    case status = fetch_status(headers) do
+      200 ->
+        if on_response_callback, do: on_response_callback.(state.push_message, {:ok, %{status: status, body: body}})
         {:noreply, state}
       nil ->
         {:noreply, state}
       error_status ->
         error_reason = body |> fetch_reason
         {error_status, error_reason} |> log_error(state.push_message)
-        if on_response_callback, do: on_response_callback.(state.push_message, {:error, %{error_status => error_reason}})
+        if on_response_callback, do: on_response_callback.(state.push_message, {:error, %{status: status, body: body}})
         {:noreply, state}
     end
   end

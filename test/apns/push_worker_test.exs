@@ -72,7 +72,7 @@ defmodule APNS.PushWorkerTest do
                                on_response_callback: callback})
 
       assert called HTTP2Client.send_request("socket", headers, json)
-      assert called Callbacker.callback(push_message, {:ok, ok_body})
+      assert called Callbacker.callback(push_message, {:ok, %{status: 200, body: ok_body}})
     end
   end
 
@@ -114,7 +114,7 @@ defmodule APNS.PushWorkerTest do
                                on_response_callback: callback})
 
       assert called HTTP2Client.send_request("socket", headers, json)
-      assert called Callbacker.callback(push_message, {:error, %{"400" => "aaaaa!"}})
+      assert called Callbacker.callback(push_message, {:error, %{status: 400, body: error_body}})
     end
   end
 end

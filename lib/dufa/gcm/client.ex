@@ -9,10 +9,10 @@ defmodule Dufa.GCM.Client do
 
   alias Dufa.GCM.PushMessage
 
-  @type push_result :: {:error, :unauthorized} |
-                       {:error, {String.t, List.t}} |
-                       {:error, HTTPoison.Response.t} |
-                       {:ok, Dufa.GCM.PushMessage.t, String.t}
+  @type push_result :: {:ok, %{status: pos_integer(), body: any()}} |
+                       {:error, %{status: pos_integer(), body: any()}} |
+                       {:error, :unhandled_error}
+
 
   @uri_path "https://gcm-http.googleapis.com/gcm/send"
 
@@ -82,18 +82,24 @@ defmodule Dufa.GCM.Client do
     case result do
       {:ok, %HTTPoison.Response{status_code: 200 = status, body: body}} ->
         handle_response(push_message, {status, body}, on_response_callback)
-      {:ok, %HTTPoison.Response{status_code: 401}} ->
+      {:ok, %HTTPoison.Response{status_code: 401 = status, body: body}} ->
         Logger.error "Unauthorized API key."
-        if on_response_callback, do: on_response_callback.(push_message, {:error, :unauthorized})
+        if on_response_callback, do: on_response_callback.(push_message, {:error, %{status: status, body: body}})
         {:error, :unauthorized}
+      {:ok, %HTTPoison.Response{status_code: status, body: body}} ->
+        Logger.error "Push error."
+        if on_response_callback, do: on_response_callback.(push_message, {:error, %{status: status, body: body}})
+        {:error, %{status: status, body: body}}
       _ ->
         Logger.error "Unhandled error."
-        if on_response_callback, do: on_response_callback.(push_message, {:error, result})
-        {:error, result}
+        if on_response_callback, do: on_response_callback.(push_message, {:error, :unhandled_error})
+        {:error, :unhandled_error}
     end
   end
 
-  @spec handle_response(Dufa.GCM.PushMessage.t, {String.t, String.t}, ((PushMessage.t, push_result) -> any()) | nil) :: :ok | {:error, {String.t, List.t}}
+  @spec handle_response(Dufa.GCM.PushMessage.t,
+                        {String.t, String.t},
+                        ((PushMessage.t, push_result) -> any()) | nil) :: {:ok, %{status: String.t, body: String.t}} | {:error, %{status: String.t, body: String.t}}
   defp handle_response(push_message, {status, body}, on_response_callback) do
     errors =
       body
@@ -104,11 +110,15 @@ defmodule Dufa.GCM.Client do
 
     if Enum.any?(errors) do
       Enum.each(errors, fn {:error, error_message} -> log_error({status, error_message}, push_message) end)
-      if on_response_callback, do: on_response_callback.(push_message, {:error, {status, Keyword.values(errors)}})
-      {:error, {status, Keyword.values(errors)}}
+      # if on_response_callback, do: on_response_callback.(push_message, {:error, {status, Keyword.values(errors)}})
+      if on_response_callback, do: on_response_callback.(push_message, {:error, %{status: status, body: body}})
+      # {:error, {status, Keyword.values(errors)}}
+      {:error, %{status: status, body: body}}
     else
-      if on_response_callback, do: on_response_callback.(push_message, body)
-      {:ok, push_message, body}
+      # if on_response_callback, do: on_response_callback.(push_message, body)
+      if on_response_callback, do: on_response_callback.(push_message, {:ok, %{status: status, body: body}})
+      # {:ok, push_message, body}
+      {:ok, %{status: status, body: body}}
     end
   end
 
