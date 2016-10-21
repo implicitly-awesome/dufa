@@ -9,7 +9,8 @@ defmodule Dufa.APNS.Client do
   alias Dufa.APNS.PushMessage
   alias Dufa.HTTP2Client
 
-  @type push_result :: {:ok, String.t} | {:error, Map.t}
+  @type push_result :: {:ok, %{status: pos_integer(), body: any()}} |
+                       {:error, %{status: pos_integer(), body: any()}}
 
   @type open_socket_result :: {:ok, Map.t} |
                               {:stop, {:error, :timeout}} |
