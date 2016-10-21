@@ -80,7 +80,7 @@ defmodule Dufa.APNS.PushWorker do
       error_status ->
         error_reason = body |> fetch_reason
         {error_status, error_reason} |> log_error(state.push_message)
-        if on_response_callback, do: on_response_callback.(state.push_message, {:error, {error_status, error_reason}})
+        if on_response_callback, do: on_response_callback.(state.push_message, {:error, %{error_status => error_reason}})
         {:noreply, state}
     end
   end
