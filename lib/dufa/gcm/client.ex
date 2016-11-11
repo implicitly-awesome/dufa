@@ -26,7 +26,7 @@ defmodule Dufa.GCM.Client do
   Pushes a `push_message` via GCM with provided `opts` options asynchronously.
   Invokes a `on_response_callback` on a response.
   """
-  @spec push(pid(), Dufa.GCM.PushMessage.t, Map.t | nil, ((PushMessage.t, push_result) -> any()) | nil) :: {:noreply, Map.t}
+  @spec push(pid(), Dufa.GCM.PushMessage.t, map() | nil, ((PushMessage.t, push_result) -> any()) | nil) :: {:noreply, map()}
   def push(client, push_message = %PushMessage{}, opts \\ %{}, on_response_callback \\ nil) do
     GenServer.cast(client, {:push, push_message, opts, on_response_callback})
   end
@@ -60,7 +60,7 @@ defmodule Dufa.GCM.Client do
   @doc """
   Resolves api_key depends on passed `opts`.
   """
-  @spec api_key_for(Map.t) :: String.t
+  @spec api_key_for(map()) :: String.t
   def api_key_for(opts \\ %{}) do
     opts[:api_key] || Application.get_env(:dufa, :gcm_api_key)
   end
@@ -122,7 +122,7 @@ defmodule Dufa.GCM.Client do
     end
   end
 
-  @spec handle_result(Map.t) :: :ok | {:error, String.t}
+  @spec handle_result(map()) :: :ok | {:error, String.t}
   defp handle_result(%{"error" => message}), do: {:error, message}
   defp handle_result(_), do: :ok
 

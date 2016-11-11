@@ -57,7 +57,7 @@ defmodule Dufa.APNS.PushWorker do
     {:noreply, state}
   end
 
-  @spec do_push(%{push_message: PushMessage.t, apns_socket: pid(), device_token: String.t}) :: {:noreply, Map.t}
+  @spec do_push(%{push_message: PushMessage.t, apns_socket: pid(), device_token: String.t}) :: {:noreply, map()}
   defp do_push(%{push_message: push_message, apns_socket: socket, device_token: device_token}) do
     {:ok, json} = Poison.encode(push_message)
 
@@ -77,13 +77,13 @@ defmodule Dufa.APNS.PushWorker do
     HTTP2Client.send_request(socket, headers, json)
   end
 
-  @spec fetch_status(List.t) :: String.t | nil
+  @spec fetch_status(list()) :: String.t | nil
   defp fetch_status([]), do: nil
   defp fetch_status([{":status", status} | _tail]), do: String.to_integer(status)
   defp fetch_status([_head | tail]), do: fetch_status(tail)
   defp fetch_status(_), do: nil
 
-  @spec handle_response({List.t, String.t}, Map.t, ((PushMessage.t, push_result) -> any()) | nil) :: {:noreply, Map.t}
+  @spec handle_response({list(), String.t}, map(), ((PushMessage.t, push_result) -> any()) | nil) :: {:noreply, map()}
   defp handle_response({headers, body}, state, on_response_callback)
          when (is_function(on_response_callback) or is_nil(on_response_callback)) do
     case status = fetch_status(headers) do

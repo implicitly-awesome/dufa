@@ -3,7 +3,7 @@ defmodule Dufa.APNS.PushMessage do
 
   @enforce_keys [:token]
 
-  @type t :: %__MODULE__{token: String.t, topic: Strimg.t, aps: Dufa.APNS.Aps.t, custom_data: Map.t}
+  @type t :: %__MODULE__{token: String.t, topic: String.t, aps: Dufa.APNS.Aps.t, custom_data: map()}
 
   defstruct token: nil,
             topic: nil,

@@ -65,7 +65,7 @@ _We'll consider this approach below._
   token: String.t,
   topic: String.t,
   aps: Dufa.APNS.Aps.t,
-  custom_data: Map.t
+  custom_data: map()
 }
 ```
 
@@ -167,7 +167,7 @@ _We'll consider this approach below._
   priority: String.t,
   content_available: boolean(),
   collapse_key: any(),
-  data: Map.t,
+  data: map(),
   notification: Dufa.GCM.Notification.t
 }
 ```

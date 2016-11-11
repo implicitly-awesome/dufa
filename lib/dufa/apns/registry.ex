@@ -10,7 +10,7 @@ defmodule Dufa.APNS.Registry do
     GenServer.start_link(__MODULE__, name, name: name)
   end
 
-  @spec init(String.t | atom()) :: {:ok, {atom() | pos_integer(), Map.t}}
+  @spec init(String.t | atom()) :: {:ok, {atom() | pos_integer(), map()}}
   def init(table) do
     tokens = :ets.new(table, [:named_table, :set, read_concurrency: true])
     refs = %{}
@@ -31,7 +31,7 @@ defmodule Dufa.APNS.Registry do
   @doc """
   Looks up for APNS.Client's pid, stored in the `registry`, by a device's `token` and return it or create it, either.
   """
-  @spec create(pid(), String.t, Map.t) :: {:reply, pid(), tuple()}
+  @spec create(pid(), String.t, map()) :: {:reply, pid(), tuple()}
   def create(registry, token, opts \\ %{}) do
     GenServer.call(registry, {:create, token, opts})
   end

@@ -3,7 +3,7 @@ defmodule Dufa.HTTP2Client do
   Wrapper over :h2_client (chatterbox).
   """
 
-  @spec uri(atom(), atom()) :: List.t
+  @spec uri(atom(), atom()) :: list()
   def uri(:apns, :prod), do: to_char_list("api.push.apple.com")
   def uri(:apns, :dev), do: to_char_list("api.development.push.apple.com")
 
@@ -25,7 +25,7 @@ defmodule Dufa.HTTP2Client do
   end
   def open_socket(_, _, _), do: {:error, :ssl_config, :invalid_config}
 
-  @spec send_request(pid(), List.t, String.t) :: {:ok, pid()} | any()
+  @spec send_request(pid(), list(), String.t) :: {:ok, pid()} | any()
   def send_request(socket, headers, payload) do
     :h2_client.send_request(socket, headers, payload)
   end
@@ -35,7 +35,7 @@ defmodule Dufa.HTTP2Client do
     :h2_client.get_response(socket, stream)
   end
 
-  @spec socket_config(binary(), binary()) :: List.t
+  @spec socket_config(binary(), binary()) :: list()
   defp socket_config(cert, key) do
     [
       cert,

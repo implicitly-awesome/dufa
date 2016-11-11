@@ -12,7 +12,7 @@ defmodule Dufa.APNS.Client do
   @type push_result :: {:ok, %{status: pos_integer(), body: any()}} |
                        {:error, %{status: pos_integer(), body: any()}}
 
-  @type open_socket_result :: {:ok, Map.t} |
+  @type open_socket_result :: {:ok, map()} |
                               {:stop, {:error, :timeout}} |
                               {:stop, {:error, :invalid_config}} |
                               {:stop, {:error, :unhandled}}
@@ -62,7 +62,7 @@ defmodule Dufa.APNS.Client do
   Pushes a `push_message` via `client`.
   Invokes `on_response_callback` on a response.
   """
-  @spec push(pid(), Dufa.APNS.PushMessage.t, Map.t | nil, ((PushMessage.t, push_result) -> any()) | nil) :: {:noreply, Map.t}
+  @spec push(pid(), Dufa.APNS.PushMessage.t, map() | nil, ((PushMessage.t, push_result) -> any()) | nil) :: {:noreply, map()}
   def push(client, push_message = %PushMessage{}, opts \\ %{}, on_response_callback \\ nil) do
     GenServer.cast(client, {:push, push_message, opts, on_response_callback})
   end

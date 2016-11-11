@@ -23,7 +23,7 @@ defmodule Dufa.APNS.SSLConfig do
   @doc """
   Creates SSL configuration with given `args` arguments.
   """
-  @spec new(Map.t) :: __MODULE__.t
+  @spec new(map()) :: __MODULE__.t
   def new(args \\ %{}) do
     mode = Map.get(args, :mode) || config_mode
     cert = Map.get(args, :cert) || cert(config_cert_file)
@@ -85,13 +85,13 @@ defmodule Dufa.APNS.SSLConfig do
   end
   def decode_file(_file_content, _type), do: nil
 
-  @spec fetch_cert(List.t) :: binary() | nil
+  @spec fetch_cert(list()) :: binary() | nil
   defp fetch_cert([]), do: nil
   defp fetch_cert([{:Certificate, cert, _} | _tail]), do: cert
   defp fetch_cert([_head | tail]), do: fetch_cert(tail)
   defp fetch_cert(_), do: nil
 
-  @spec fetch_key(List.t) :: binary() | nil
+  @spec fetch_key(list()) :: binary() | nil
   defp fetch_key([]), do: nil
   defp fetch_key([{:RSAPrivateKey, key, _} | _tail]), do: {:RSAPrivateKey, key}
   defp fetch_key([_head | tail]), do: fetch_key(tail)

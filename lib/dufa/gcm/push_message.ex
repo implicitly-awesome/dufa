@@ -6,7 +6,7 @@ defmodule Dufa.GCM.PushMessage do
                          priority: String.t,
                          content_available: boolean(),
                          collapse_key: any(),
-                         data: Map.t,
+                         data: map(),
                          notification: Dufa.GCM.Notification.t}
 
   defstruct to: nil,

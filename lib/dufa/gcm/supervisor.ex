@@ -23,7 +23,7 @@ defmodule Dufa.GCM.Supervisor do
   @spec stop_client(pid()) :: :ok | {:error, error} when error: :not_found | :simple_one_for_one
   def stop_client(client), do: Supervisor.terminate_child(@name, client)
 
-  @spec clients() :: List.t
+  @spec clients() :: list()
   def clients, do: Supervisor.which_children(@name)
 
   @spec stop() :: :ok
