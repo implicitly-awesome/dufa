@@ -17,9 +17,9 @@ defmodule Dufa.APNS.Supervisor do
     supervise(children, strategy: :simple_one_for_one)
   end
 
-  @spec start_client(String.t, map()) :: Supervisor.on_start_child
-  def start_client(device_token, opts) do
-    Supervisor.start_child(@name, [device_token, SSLConfig.new(opts)])
+  @spec start_client(String.t, any(), map()) :: Supervisor.on_start_child
+  def start_client(http2_client, device_token, opts) do
+    Supervisor.start_child(@name, [http2_client, device_token, SSLConfig.new(opts)])
   end
 
   @spec stop_client(pid()) :: :ok | {:error, error} when error: :not_found | :simple_one_for_one

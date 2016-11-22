@@ -6,15 +6,15 @@ defmodule Dufa.APNS.Registry do
 
   use GenServer
 
-  def start_link(name) do
-    GenServer.start_link(__MODULE__, name, name: name)
+  def start_link(name, http2_client) do
+    GenServer.start_link(__MODULE__, {name, http2_client}, name: name)
   end
 
-  @spec init(String.t | atom()) :: {:ok, {atom() | pos_integer(), map()}}
-  def init(table) do
+  @spec init({String.t | atom(), any()}) :: {:ok, {atom() | pos_integer(), map()}}
+  def init({table, http2_client}) do
     tokens = :ets.new(table, [:named_table, :set, read_concurrency: true])
     refs = %{}
-    {:ok, {tokens, refs}}
+    {:ok, {http2_client, tokens, refs}}
   end
 
   @doc """
@@ -24,7 +24,7 @@ defmodule Dufa.APNS.Registry do
   def lookup(registry, token) do
     case :ets.lookup(registry, token) do
       [{^token, pid}] -> {:ok, pid}
-      [] -> :error
+      _ -> :error
     end
   end
 
@@ -42,23 +42,23 @@ defmodule Dufa.APNS.Registry do
   @spec stop(pid) :: :ok
   def stop(registry), do: GenServer.stop(registry)
 
-  def handle_call({:create, token, opts}, _from, {tokens, refs}) do
+  def handle_call({:create, token, opts}, _from, {http2_client, tokens, refs}) do
     case lookup(tokens, token) do
       {:ok, pid} ->
-        {:reply, pid, {tokens, refs}}
+        {:reply, pid, {http2_client, tokens, refs}}
       :error ->
-        {:ok, pid} = Dufa.APNS.Supervisor.start_client(token, opts)
+        {:ok, pid} = Dufa.APNS.Supervisor.start_client(http2_client, token, opts)
         ref = Process.monitor(pid)
         refs = Map.put(refs, ref, token)
         :ets.insert(tokens, {token, pid})
-        {:reply, pid, {tokens, refs}}
+        {:reply, pid, {http2_client, tokens, refs}}
     end
   end
 
-  def handle_info({:DOWN, ref, :process, _pid, _reason}, {tokens, refs}) do
+  def handle_info({:DOWN, ref, :process, _pid, _reason}, {http2_client, tokens, refs}) do
     {token, refs} = Map.pop(refs, ref)
     :ets.delete(tokens, token)
-    {:noreply, {tokens, refs}}
+    {:noreply, {http2_client, tokens, refs}}
   end
 
   def handle_info(_msg, state) do

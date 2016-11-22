@@ -3,7 +3,8 @@ defmodule Dufa.APNS.PushWorker do
   require Logger
 
   alias Dufa.APNS.PushMessage
-  alias Dufa.HTTP2Client
+  alias Dufa.Network.HTTP2
+  alias Dufa.Network.HTTP2.Connection
 
   @type push_result :: {:ok, %{status: pos_integer(), body: any()}} |
                        {:error, %{status: pos_integer(), body: any()}}
@@ -33,7 +34,7 @@ defmodule Dufa.APNS.PushWorker do
     :nothing
   end
 
-  def handle_info(:push, %{apns_socket: _apns_socket,
+  def handle_info(:push, %{connection: _connection,
                            push_message: _push_message,
                            opts: _opts,
                            on_response_callback: _on_response_callback} = state) do
@@ -47,9 +48,9 @@ defmodule Dufa.APNS.PushWorker do
   end
 
   def handle_info({:END_STREAM, stream},
-                  %{apns_socket: socket,
+                  %{connection: connection,
                     on_response_callback: on_response_callback} = state) do
-    {:ok, {headers, body}} = HTTP2Client.get_response(socket, stream)
+    {:ok, {headers, body}} = HTTP2.get_response(connection, stream)
 
     handle_response({headers, body}, state, on_response_callback)
 
@@ -57,8 +58,8 @@ defmodule Dufa.APNS.PushWorker do
     {:noreply, state}
   end
 
-  @spec do_push(%{push_message: PushMessage.t, apns_socket: pid(), device_token: String.t}) :: {:noreply, map()}
-  defp do_push(%{push_message: push_message, apns_socket: socket, device_token: device_token}) do
+  @spec do_push(%{push_message: PushMessage.t, connection: Connection.t, device_token: String.t}) :: {:noreply, map()}
+  defp do_push(%{push_message: push_message, connection: connection, device_token: device_token}) do
     {:ok, json} = Poison.encode(push_message)
 
     headers = [
@@ -74,7 +75,7 @@ defmodule Dufa.APNS.PushWorker do
         headers
       end
 
-    HTTP2Client.send_request(socket, headers, json)
+    HTTP2.send_request(connection, headers, json)
   end
 
   @spec fetch_status(list()) :: String.t | nil

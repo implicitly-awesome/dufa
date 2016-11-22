@@ -1,44 +1,25 @@
 defmodule APNS.ClientTest do
   use ExUnit.Case, async: false
 
-  import Mock
-
-  @apns_production_api_uri "api.push.apple.com"
-  @apns_development_api_uri "api.development.push.apple.com"
-
   alias Dufa.APNS.Client
   alias Dufa.APNS.SSLConfig
-  alias Dufa.HTTP2Client
-  alias Dufa.APNS.PushMessage
-  alias Dufa.APNS.Aps
-  alias Dufa.APNS.Alert
 
-  setup do
-    token = "device_token"
-    alert = %Alert{title: "Title", body: "Body"}
-    aps = %Aps{alert: alert}
-    push_message = %PushMessage{token: token, aps: aps, custom_data: %{}}
-    ssl_config = SSLConfig.new
-    ok_headers = [{":status", "200"}]
-    ok_body = "all is ok"
-    error_headers = [{":status", "400"}]
-    {:ok, error_body} = Poison.encode(%{reason: "aaaaa!"})
+  defmodule TestHTTP2Client do
+    @behaviour Dufa.Network.HTTP2.Client
 
-    {
-      :ok,
-      ssl_config: ssl_config,
-      ok_response: {ok_headers, ok_body},
-      error_response: {error_headers, error_body},
-      push_message: push_message
-    }
+    def uri(:apns, :prod), do: to_char_list("apns_prod_uri")
+    def uri(:apns, :dev), do: to_char_list("apns_dev_uri")
+
+    def open_socket(_, _, _), do: {:ok, nil}
+
+    def send_request(_, _, _), do: :ok
+
+    def get_response(_, _), do: :ok
   end
 
-  test_with_mock "stop/1: stops a client",
-                 %{ssl_config: ssl_config},
-                 HTTP2Client,
-                 [],
-                 [open_socket: fn (_, _, _) -> {:ok, nil} end] do
-    {:ok, client} = Client.start_link("device_token", ssl_config)
+  test "stop/1: stops a client" do
+    {:ok, client} = Client.start_link(TestHTTP2Client, "device_token", SSLConfig.new)
+    assert Process.alive?(client)
     Client.stop(client)
     refute Process.alive?(client)
   end
@@ -50,11 +31,9 @@ defmodule APNS.ClientTest do
       key:  :rty
     })
 
-    with_mock(HTTP2Client, [open_socket: fn (_,_,_) -> {:ok, nil} end]) do
-      {:ok, client} = Client.start_link("device_token", ssl_config)
-      assert Client.current_ssl_config(client).mode == :dev
-      assert Client.current_ssl_config(client).cert == :qwe
-      assert Client.current_ssl_config(client).key  == :rty
-    end
+    {:ok, client} = Client.start_link(TestHTTP2Client, "device_token", ssl_config)
+    assert Client.current_ssl_config(client).mode == :dev
+    assert Client.current_ssl_config(client).cert == :qwe
+    assert Client.current_ssl_config(client).key  == :rty
   end
 end

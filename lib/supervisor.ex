@@ -7,7 +7,8 @@ defmodule Dufa.Supervisor do
 
   def init(:ok) do
     children = [
-      worker(Dufa.APNS.Registry, [:apns_registry], id: Dufa.APNS.Registry),
+      # provide HTTP2 client from the app configuration
+      worker(Dufa.APNS.Registry, [:apns_registry, Dufa.Network.HTTP2.Chatterbox], id: Dufa.APNS.Registry),
       supervisor(Dufa.APNS.Supervisor, []),
       supervisor(Dufa.GCM.Supervisor, [])
     ]

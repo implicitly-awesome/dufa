@@ -1,16 +1,12 @@
-defmodule Dufa.HTTP2Client do
+defmodule Dufa.Network.HTTP2.Chatterbox do
+  @behaviour Dufa.Network.HTTP2.Client
   @moduledoc """
   Wrapper over :h2_client (chatterbox).
   """
 
-  @spec uri(atom(), atom()) :: list()
   def uri(:apns, :prod), do: to_char_list("api.push.apple.com")
   def uri(:apns, :dev), do: to_char_list("api.development.push.apple.com")
 
-  @spec open_socket(atom(), Dufa.APNS.SSLConfig.t, pos_integer()) :: {:ok, pid()} |
-                                                                     {:error, :open_socket, :timeout} |
-                                                                     {:error, :ssl_config, :certificate_missed} |
-                                                                     {:error, :ssl_config, :rsa_key_missed}
   def open_socket(_, _, 3), do: {:error, :open_socket, :timeout}
   def open_socket(_provider, %{cert: nil}, _tries), do: {:error, :ssl_config, :certificate_missed}
   def open_socket(_provider, %{key: nil}, _tries), do: {:error, :ssl_config, :rsa_key_missed}
@@ -25,12 +21,10 @@ defmodule Dufa.HTTP2Client do
   end
   def open_socket(_, _, _), do: {:error, :ssl_config, :invalid_config}
 
-  @spec send_request(pid(), list(), String.t) :: {:ok, pid()} | any()
   def send_request(socket, headers, payload) do
     :h2_client.send_request(socket, headers, payload)
   end
 
-  @spec get_response(pid(), pid()) :: {:ok, {String.t, String.t}} | any()
   def get_response(socket, stream) do
     :h2_client.get_response(socket, stream)
   end
