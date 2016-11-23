@@ -1,4 +1,11 @@
 defmodule Dufa.Supervisor do
+  @moduledoc """
+  The main application supervisor. Supervises:
+  * Dufa.APNS.Registry
+  * Dufa.APNS.Supervisor
+  * Dufa.GCM.Supervisor
+  """
+
   use Supervisor
 
   def start_link do

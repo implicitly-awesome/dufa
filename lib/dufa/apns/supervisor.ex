@@ -1,4 +1,9 @@
 defmodule Dufa.APNS.Supervisor do
+  @moduledoc """
+  APNS supervisor. Supervises:
+  * Dufa.APNS.Client
+  """
+
   use Supervisor
 
   @name Dufa.APNS.Supervisor

@@ -1,5 +1,13 @@
 defmodule Dufa.Network.HTTP2 do
+  @moduledoc """
+  Exposes the API for HTTP2 interaction.
+  """
+
   defmodule Connection do
+    @moduledoc """
+    Defines the structure of a HTTP2 connection.
+    """
+
     @derive [Poison.Encoder]
 
     @type t :: %__MODULE__{client: any(),

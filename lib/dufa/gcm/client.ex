@@ -1,6 +1,7 @@
 defmodule Dufa.GCM.Client do
   @moduledoc """
   The client that incapsulates interaction logic with GCM.
+  Lives temporarily, while the push job get done.
   """
 
   use GenServer

@@ -2,6 +2,8 @@ defmodule Dufa.APNS.Registry do
   @moduledoc """
   APNS clients registry. Stores connections (per device token) opened by
   correspond clients (pids).
+  Returns a client for a token from the registry.
+  Creates a client if there is no a client for a token.
   """
 
   use GenServer

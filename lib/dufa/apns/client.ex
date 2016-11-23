@@ -1,6 +1,6 @@
 defmodule Dufa.APNS.Client do
   @moduledoc """
-  The client that incapsulates interaction logic with APNS.
+  The client that holds the connection to APNS and spawns Dufa.APNS.PushWorker on each push.
   """
 
   use GenServer

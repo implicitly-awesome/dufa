@@ -1,4 +1,9 @@
 defmodule Dufa.APNS.PushWorker do
+  @moduledoc """
+  Worker that incapsulates the interaction logic with APNS.
+  Lives temporarily, while the push job get done.
+  """
+
   use GenServer
   require Logger
 

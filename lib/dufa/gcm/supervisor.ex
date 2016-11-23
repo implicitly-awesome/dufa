@@ -1,4 +1,9 @@
 defmodule Dufa.GCM.Supervisor do
+  @moduledoc """
+  GCM supervisor. Supervises:
+  * Dufa.GCM.Client
+  """
+
   use Supervisor
 
   @name Dufa.GCM.Supervisor
