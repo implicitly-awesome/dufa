@@ -22,7 +22,7 @@ defmodule Dufa.APNS.Supervisor do
     supervise(children, strategy: :simple_one_for_one)
   end
 
-  @spec start_client(String.t, any(), map()) :: Supervisor.on_start_child
+  @spec start_client(Dufa.Network.HTTP2.Client.t, String.t, map()) :: Supervisor.on_start_child
   def start_client(http2_client, device_token, opts) do
     Supervisor.start_child(@name, [http2_client, device_token, SSLConfig.new(opts)])
   end

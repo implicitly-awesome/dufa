@@ -17,11 +17,13 @@ defmodule Dufa.APNS.Client do
                               {:stop, {:error, :invalid_config}} |
                               {:stop, {:error, :unhandled}}
 
+  @spec start_link(Dufa.Network.HTTP2.Client.t, String.t, Dufa.APNS.SSLConfig.t) ::
+    {:ok, pid} | :ignore | {:error, {:already_started, pid} | any()}
   def start_link(http2_client, device_token, ssl_config) do
     GenServer.start_link(__MODULE__, {:ok, http2_client, device_token, ssl_config})
   end
 
-  @spec init({:ok, String.t, any(), Dufa.APNS.SSLConfig.t}) :: open_socket_result
+  @spec init({:ok, Dufa.Network.HTTP2.Client.t, String.t, Dufa.APNS.SSLConfig.t}) :: open_socket_result
   def init({:ok, http2_client, device_token, ssl_config}) do
     case HTTP2.connect(http2_client, :apns, ssl_config) do
       {:ok, connection} ->

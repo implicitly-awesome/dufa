@@ -2,6 +2,7 @@ defmodule Dufa.Network.HTTP2.Client do
   @moduledoc """
   Behaviour that defines base callback need to implement by http2 client.
   """
+  @type t :: __MODULE__
 
   @callback uri(atom(), atom()) :: list()
 

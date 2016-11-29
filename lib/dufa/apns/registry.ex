@@ -8,11 +8,14 @@ defmodule Dufa.APNS.Registry do
 
   use GenServer
 
+  @spec start_link(atom(), Dufa.Network.HTTP2.Client.t) :: {:ok, pid} | :ignore |
+    {:error, {:already_started, pid} | any()}
   def start_link(name, http2_client) do
     GenServer.start_link(__MODULE__, {name, http2_client}, name: name)
   end
 
-  @spec init({String.t | atom(), any()}) :: {:ok, {atom() | pos_integer(), map()}}
+  @spec init({String.t | atom(), Dufa.Network.HTTP2.Client.t}) ::
+    {:ok, {Dufa.Network.HTTP2.Client.t, atom() | pos_integer(), map()}}
   def init({table, http2_client}) do
     tokens = :ets.new(table, [:named_table, :set, read_concurrency: true])
     refs = %{}

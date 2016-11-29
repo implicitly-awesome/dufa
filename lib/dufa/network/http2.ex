@@ -21,6 +21,8 @@ defmodule Dufa.Network.HTTP2 do
   alias Dufa.Network.HTTP2.Connection
 
   @doc "Opens and returns a connection to the `provider` with specified `config` and the `client` that handles the connection"
+  @spec connect(Dufa.Network.HTTP2.Client.t, atom(), Dufa.APNS.SSLConfig.t) ::
+    {:ok, Dufa.Network.HTTP2.Connection.t} | {:error, any()}
   def connect(client, provider, config) do
     case client.open_socket(provider, config, 0) do
       {:ok, socket} ->
