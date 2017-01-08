@@ -13,8 +13,8 @@ defmodule Dufa.Mixfile do
      start_permanent: Mix.env == :prod,
      name: "Dufa",
      description: @description,
-     package: package,
-     deps: deps,
+     package: package(),
+     deps: deps(),
      source_url: "https://github.com/madeinussr/dufa",
      docs: [extras: ["README.md"]]]
   end

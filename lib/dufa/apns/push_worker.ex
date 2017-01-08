@@ -59,7 +59,7 @@ defmodule Dufa.APNS.PushWorker do
 
     handle_response({headers, body}, state, on_response_callback)
 
-    Process.send(self, :kill_worker, [])
+    Process.send(self(), :kill_worker, [])
     {:noreply, state}
   end
 

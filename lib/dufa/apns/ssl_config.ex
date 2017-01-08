@@ -25,9 +25,9 @@ defmodule Dufa.APNS.SSLConfig do
   """
   @spec new(map()) :: __MODULE__.t
   def new(args \\ %{}) do
-    mode = Map.get(args, :mode) || config_mode
-    cert = Map.get(args, :cert) || cert(config_cert_file)
-    key =  Map.get(args, :key)  || key(config_key_file)
+    mode = Map.get(args, :mode) || config_mode()
+    cert = Map.get(args, :cert) || cert(config_cert_file())
+    key =  Map.get(args, :key)  || key(config_key_file())
 
     %__MODULE__{
       mode: mode,

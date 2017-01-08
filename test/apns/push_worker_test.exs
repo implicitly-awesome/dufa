@@ -89,7 +89,7 @@ defmodule APNS.PushWorkerTest do
       Process.send(worker, :push, [])
       PushWorker.handle_info({:END_STREAM, nil}, push_state)
 
-      assert called Callbacker.callback(push_message, {:ok, %{status: 200, body: ok_body}})
+      assert called Callbacker.callback(push_message, {:ok, %{status: 200, body: ok_body()}})
     end
   end
 
@@ -122,7 +122,7 @@ defmodule APNS.PushWorkerTest do
       Process.send(worker, :push, [])
       PushWorker.handle_info({:END_STREAM, nil}, push_state)
 
-      assert called Callbacker.callback(push_message, {:error, %{status: 400, body: error_body}})
+      assert called Callbacker.callback(push_message, {:error, %{status: 400, body: error_body()}})
     end
   end
 end

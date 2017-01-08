@@ -7,8 +7,6 @@ defmodule GCM.ClientTest do
   alias Dufa.GCM.PushMessage
   alias Dufa.GCM.Notification
 
-  @client_name :gcm_client
-
   @uri_path "https://gcm-http.googleapis.com/gcm/send"
 
   @successful_response %HTTPoison.Response{
