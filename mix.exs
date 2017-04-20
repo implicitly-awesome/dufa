@@ -26,8 +26,8 @@ defmodule Dufa.Mixfile do
 
   defp deps do
     [
-      {:poison, "~> 2.0"},
-      {:httpoison, "~> 0.9.0"},
+      {:poison, "~> 3.0"},
+      {:httpoison, "~> 0.10.0"},
       {:mock, "~> 0.1.1", only: :test},
       {:chatterbox, github: "joedevivo/chatterbox"}
     ]
