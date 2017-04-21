@@ -83,6 +83,7 @@ Where:
   content_available: pos_integer(),
   badge: pos_integer(),
   sound: String.t,
+  category: String.t,
   alert: Dufa.APNS.Alert.t
 }
 ```
@@ -92,6 +93,7 @@ Where:
 * `content_available` - new content availability indicator
 * `badge` - the number to display as the badge of the app icon
 * `sound` - the name of a notification's sound
+* `category` - the notification's type
 * `alert` - if this property is included, the system displays a standard alert or a banner (see it's structure below)
 
 ### `Dufa.APNS.Alert`
